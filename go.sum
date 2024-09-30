@@ -155,8 +155,8 @@ github.com/fujiwara/logutils v1.1.2 h1:nYVRyTj+5SyCvpZUrYIZU4kubqNycGTxFXMKJBKe0
 github.com/fujiwara/logutils v1.1.2/go.mod h1:pdb/Uk70rjQWEmFm/OvYH7OG8meZt1fEIqC0qZbvro4=
 github.com/fujiwara/ssm-lookup v0.1.0 h1:30dFvRurr1cvBq6KZL0QJrN1e5y80p6EUAari6LoL3Y=
 github.com/fujiwara/ssm-lookup v0.1.0/go.mod h1:ssVwS1FrHAKouOMEmYC6j07XRKqBGdABRmv6gBKewVg=
-github.com/fujiwara/tfstate-lookup v1.3.2 h1:jfPPRecZ9yzPI0epCnK5UCxY3CQAAF0Iq4L3osJ3d58=
-github.com/fujiwara/tfstate-lookup v1.3.2/go.mod h1:qYLO+8Ane5hF54BdvLQTbXiHWviq3uGCuW6Lz3fcWCM=
+github.com/fujiwara/tfstate-lookup v1.4.2 h1:Mmsf+li1h+bfeqgKwFw4lz74g89ooMlDp99cOb3aZ4c=
+github.com/fujiwara/tfstate-lookup v1.4.2/go.mod h1:C/n3SgmKG5Q3R/CuoOJLkSwtUDp6pUIVwShLPSFcZCw=
 github.com/fujiwara/tracer v1.0.2 h1:ztstnson+QwOpO69Jir4nkUKlYgse3vJ28FO2eOUPk0=
 github.com/fujiwara/tracer v1.0.2/go.mod h1:r2QzBEBNsW9OhmoVdmTANG+GEmxWNZk7317/mnW2yIw=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
