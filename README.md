@@ -1136,7 +1136,7 @@ The `config` section defines the following parameters:
 
 - `name`: template function name
 - `command`: external command and arguments (array)
-  - The command must return a JSON string to stdout.
+  - The command must return a JSON string or any strings to stdout.
 - `num_args`: number of arguments (optional, default 0)
 - `parser`: parser type "json" or "string" (optional, default "json")
 - `timeout`: command execution timeout seconds (optional, default never timeout)
