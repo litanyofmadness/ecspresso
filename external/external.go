@@ -22,6 +22,7 @@ type Config struct {
 	Name    string   `json:"name" yaml:"name"`
 	Command []string `json:"command" yaml:"command"`
 	NumArgs int      `json:"num_args" yaml:"num_args"`
+	Parser  string   `json:"parser" yaml:"parser"`
 	Timeout int64    `json:"timeout" yaml:"timeout"`
 }
 
@@ -31,6 +32,12 @@ func NewPlugin(ctx context.Context, cfg *Config) (*Plugin, error) {
 	}
 	if cfg.Name == "" {
 		return nil, fmt.Errorf("name is required")
+	}
+	if cfg.Parser == "" {
+		cfg.Parser = "json" // default parser
+	}
+	if cfg.Parser != "json" && cfg.Parser != "string" {
+		return nil, fmt.Errorf("unsupported parser: %s", cfg.Parser)
 	}
 	return &Plugin{Config: cfg}, nil
 }
@@ -62,11 +69,18 @@ func (p *Plugin) Exec(ctx context.Context, extraArgs []string) (any, error) {
 	if timedOut {
 		return nil, fmt.Errorf("command timed out: %s %v", cmd, args)
 	}
-	var result any
-	if err := json.NewDecoder(stdout).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode json: %w", err)
+	switch p.Config.Parser {
+	case "json", "":
+		var result any
+		if err := json.NewDecoder(stdout).Decode(&result); err != nil {
+			return nil, fmt.Errorf("failed to decode json: %w", err)
+		}
+		return result, nil
+	case "string":
+		return stdout.String(), nil
+	default:
+		return nil, fmt.Errorf("unsupported parser: %s", p.Config.Parser)
 	}
-	return result, nil
 }
 
 func (p *Plugin) FuncMap(ctx context.Context) template.FuncMap {

@@ -63,3 +63,32 @@ func TestExternalPluginTimeout(t *testing.T) {
 		t.Log(err)
 	}
 }
+
+func TestExternalPluginString(t *testing.T) {
+	ctx := context.Background()
+	config := external.Config{
+		Name:    "echo",
+		Command: []string{"echo", "-n"},
+		NumArgs: 1,
+		Parser:  "string",
+		Timeout: 0,
+	}
+	p, err := external.NewPlugin(ctx, &config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := p.Exec(ctx, []string{`Hello World`})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result == nil {
+		t.Fatal("result is nil")
+	}
+	if m, ok := result.(string); ok {
+		if m != "Hello World" {
+			t.Fatalf("unexpected result: %s", m)
+		}
+	} else {
+		t.Fatalf("result is not a string: %T", result)
+	}
+}

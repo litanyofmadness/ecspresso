@@ -2,6 +2,7 @@ local env = std.native('env');
 local must_env = std.native('must_env');
 local isCodeDeploy = env('DEPLOYMENT_CONTROLLER', 'ECS') == 'CODE_DEPLOY';
 local jq = std.native('jq');
+local cat = std.native('cat');
 {
   capacityProviderStrategy: [
     {
@@ -69,6 +70,10 @@ local jq = std.native('jq');
     {
       key: 'deployed_at_localtime',
       value: jq('now | localtime | todateiso8601'),
+    },
+    {
+      key: 'envfile_content',
+      value: cat('./envfile'),
     },
     {
       key: 'cluster',
