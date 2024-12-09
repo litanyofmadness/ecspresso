@@ -9,6 +9,15 @@ updates:
       aws-sdk-go-v2:
         patterns:
           - "github.com/aws/aws-sdk-go-v2*"
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: daily
+    target-branch: v2
+    groups:
+      aws-sdk-go-v2:
+        patterns:
+          - "github.com/aws/aws-sdk-go-v2/service/ecs"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
