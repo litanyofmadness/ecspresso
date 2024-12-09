@@ -2,6 +2,7 @@ local env = std.native('env');
 local must_env = std.native('must_env');
 local isCodeDeploy = env('DEPLOYMENT_CONTROLLER', 'ECS') == 'CODE_DEPLOY';
 {
+  availabilityZoneRebalancing: 'ENABLED',
   capacityProviderStrategy: [
     {
       base: 1,
@@ -95,6 +96,7 @@ local isCodeDeploy = env('DEPLOYMENT_CONTROLLER', 'ECS') == 'CODE_DEPLOY';
       name: 'ebs',
     },
   ],
+  /*
   vpcLatticeConfigurations: [
     {
       portName: 'nginx-http',
@@ -102,4 +104,5 @@ local isCodeDeploy = env('DEPLOYMENT_CONTROLLER', 'ECS') == 'CODE_DEPLOY';
       targetGroupArn: 'arn:aws:vpc-lattice:ap-northeast-1:%s:targetgroup/tg-009147df264a0bacb' % must_env('AWS_ACCOUNT_ID'),
     },
   ],
+  */
 }
