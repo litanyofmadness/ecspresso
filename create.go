@@ -54,6 +54,7 @@ func (d *App) createService(ctx context.Context, opt DeployOption) error {
 	}
 
 	createServiceInput := &ecs.CreateServiceInput{
+		AvailabilityZoneRebalancing:   svd.AvailabilityZoneRebalancing,
 		Cluster:                       aws.String(d.config.Cluster),
 		CapacityProviderStrategy:      svd.CapacityProviderStrategy,
 		DeploymentConfiguration:       svd.DeploymentConfiguration,

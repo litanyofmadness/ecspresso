@@ -197,6 +197,7 @@ func (d *App) UpdateServiceTasks(ctx context.Context, taskDefinitionArn string, 
 
 func svToUpdateServiceInput(sv *Service) *ecs.UpdateServiceInput {
 	in := &ecs.UpdateServiceInput{
+		AvailabilityZoneRebalancing:   sv.AvailabilityZoneRebalancing,
 		CapacityProviderStrategy:      sv.CapacityProviderStrategy,
 		DeploymentConfiguration:       sv.DeploymentConfiguration,
 		DesiredCount:                  sv.DesiredCount,
