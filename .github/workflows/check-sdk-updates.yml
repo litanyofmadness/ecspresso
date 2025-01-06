@@ -30,5 +30,7 @@ jobs:
           fi
           git switch -c update-aws-sdk-go-v2-ecs-$(date +%Y-%m-%d-%H-%M-%S)
           git add aws-sdk-go-v2-ecs.md
+          git config --global user.email "${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
+          git config --global user.name "${GITHUB_ACTOR}"
           git commit -m "Update aws-sdk-go-v2 about service/ecs $(date +%Y-%m-%d)"
           gh pr create --title "Update aws-sdk-go-v2 about service/ecs $(date +%Y-%m-%d)"
