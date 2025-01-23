@@ -7,11 +7,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  install:
+  install_legacy:
     strategy:
       matrix:
         runner:
-          - ubuntu-latest
+          - ubuntu-22.04
     name: test action
     runs-on: ${{ matrix.runner }}
     steps:
@@ -61,11 +61,12 @@ jobs:
       - run: |
           ecspresso version 2>&1 | fgrep v2.0.4
 
-  install_on_arm:
+  install_v2:
     strategy:
       matrix:
         runner:
-          - buildjet-2vcpu-ubuntu-2204-arm
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
     name: test action
     runs-on: ${{ matrix.runner }}
     steps:
