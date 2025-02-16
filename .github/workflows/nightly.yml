@@ -22,7 +22,7 @@ jobs:
 
       - name: Set env
         run: |
-          git fetch --prune --unshallow --tags
+          git fetch --prune --tags
           full=$(git describe --abbrev --tags --always)
           version=$(echo "$full" | cut -d- -f1)
           rev=$(echo "$full" | cut -d- -f2- | sha1sum | cut -d' ' -f1)
