@@ -466,7 +466,7 @@ func (d *App) verifyTaskDefinition(ctx context.Context) error {
 
 var (
 	// e.g. {aws_account_id}.dkr.ecr.{region}.amazonaws.com/amazonlinux:latest
-	ecrImageURLRegex = regexp.MustCompile(`^([0-9]+)\.dkr\.ecr\.([0-9a-zA-Z-]+)\.amazonaws\.com/.*`)
+	ecrImageURLRegex = regexp.MustCompile(`^([0-9]+)\.dkr\.ecr\.([0-9a-zA-Z-]+)\.amazonaws\.com(?:\.cn)?\/.*`)
 )
 
 func (d *App) verifyECRImage(ctx context.Context, image, region string) error {
