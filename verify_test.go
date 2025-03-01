@@ -57,6 +57,10 @@ var testImagesIsECR = []struct {
 		image: "ubuntu:latest",
 		isECR: false,
 	},
+	{
+		image: "123456789012.dkr.ecr.cn-north-1.amazonaws.com.cn/my-app:latest",
+		isECR: true,
+	},
 }
 
 type goPlatform struct {
