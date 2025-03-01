@@ -353,9 +353,6 @@ func (d *App) verifyServiceDefinition(ctx context.Context) error {
 			return err
 		}
 	}
-	if len(sv.LoadBalancers) == 0 && sv.HealthCheckGracePeriodSeconds != nil {
-		return errors.New("service has no load balancers, but healthCheckGracePeriodSeconds is defined")
-	}
 
 	for i, vc := range sv.VolumeConfigurations {
 		name := fmt.Sprintf("VolumeConfigurations[%d]", i)
