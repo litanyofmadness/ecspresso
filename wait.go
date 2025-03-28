@@ -137,6 +137,63 @@ func (d *App) WaitServiceStable(ctx context.Context, sv *Service) error {
 	return nil
 }
 
+func (d *App) WaitServiceDeployStable(ctx context.Context, sv *Service) error {
+	const (
+		pollInterval = 15 * time.Second
+		maxWaitTime  = 10 * time.Minute
+	)
+
+	start := time.Now()
+
+	// Wait for the latest ServiceDeployment to be active
+	time.Sleep(pollInterval)
+
+	listResp, err := d.ecs.ListServiceDeployments(ctx, &ecs.ListServiceDeploymentsInput{
+		Cluster: &d.Cluster,
+		Service: &d.Service,
+	})
+	if err != nil {
+		return err
+	}
+	if len(listResp.ServiceDeployments) == 0 {
+		return errors.New("no deployments found for the service")
+	}
+
+	deployment := listResp.ServiceDeployments[0]
+	deploymentArn := deployment.ServiceDeploymentArn
+
+	d.logger.Println("Waiting for service deployment ", *deploymentArn, " to complete...")
+
+	for {
+		if time.Since(start) > maxWaitTime {
+			return errors.New("timeout waiting for service deployment to complete")
+		}
+
+		resp, err := d.ecs.DescribeServiceDeployments(ctx, &ecs.DescribeServiceDeploymentsInput{
+			ServiceDeploymentArns: []string{*deploymentArn},
+		})
+		if err != nil {
+			return err
+		}
+
+		if (len(resp.ServiceDeployments) == 1) {
+			switch resp.ServiceDeployments[0].Status {
+			case types.ServiceDeploymentStatusSuccessful, types.ServiceDeploymentStatusRollbackSuccessful:
+				d.logger.Println("Service deployment completed successfully.")
+				return nil
+			case types.ServiceDeploymentStatusStopped, types.ServiceDeploymentStatusRollbackFailed, types.ServiceDeploymentStatusStopRequested:
+				d.logger.Println("Service deployment failed.")
+				return errors.New("Deploy Failed.")
+			default:
+		                d.logger.Println("Deployment still in progress, waiting...")
+			}
+		}
+
+		time.Sleep(pollInterval)
+	}
+}
+
+
 func (d *App) WaitForCodeDeploy(ctx context.Context, sv *Service) error {
 	d.Log("[DEBUG] wait for CodeDeploy")
 	dp, err := d.findDeploymentInfo(ctx)
