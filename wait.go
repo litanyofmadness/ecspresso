@@ -43,7 +43,11 @@ func (d *App) WaitFunc(sv *Service, confirm confirmFunc) (waitFunc, error) {
 		case types.DeploymentControllerTypeCodeDeploy:
 			return d.WaitForCodeDeploy, nil
 		case types.DeploymentControllerTypeEcs:
-			return defaultFunc, nil
+			if d.WaitServiceDeploy() {
+				return confirm.wrap(d.WaitServiceDeployStable), nil
+			} else {
+				return defaultFunc, nil
+			}
 		default:
 			return nil, fmt.Errorf("unsupported deployment controller type: %s", dc.Type)
 		}

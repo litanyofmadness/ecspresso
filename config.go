@@ -63,6 +63,7 @@ type Config struct {
 	Timeout               *Duration         `yaml:"timeout,omitempty" json:"timeout,omitempty"`
 	CodeDeploy            *ConfigCodeDeploy `yaml:"codedeploy,omitempty" json:"codedeploy,omitempty"`
 	Ignore                *ConfigIgnore     `yaml:"ignore,omitempty" json:"ignore,omitempty"`
+	WaitServiceDeploy     bool              `yaml:"wait_service_deploy,omitempty" json:"wait_service_deploy,omitempty"`
 
 	path               string
 	templateFuncs      []template.FuncMap
@@ -129,6 +130,7 @@ func (c *Config) OverrideByCLIOptions(opt *CLIOptions) {
 	if opt.FilterCommand != "" {
 		c.FilterCommand = opt.FilterCommand
 	}
+	c.WaitServiceDeploy = opt.WaitServiceDeploy
 }
 
 // Restrict restricts a configuration.

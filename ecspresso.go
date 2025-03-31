@@ -590,3 +590,7 @@ func (d *App) GetLogInfo(task *types.Task, c *types.ContainerDefinition) (string
 func (d *App) FilterCommand() string {
 	return d.config.FilterCommand
 }
+
+func (d *App) WaitServiceDeploy() bool {
+	return d.config.WaitServiceDeploy
+}
