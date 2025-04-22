@@ -32,6 +32,7 @@ type DeployOption struct {
 	Revision             int64  `help:"revision of the task definition to run when --skip-task-definition" default:"0"`
 	ForceNewDeployment   bool   `help:"force a new deployment of the service" default:"false"`
 	Wait                 bool   `help:"wait for service stable" default:"true" negatable:""`
+	WaitUntil            string `help:"Choose whether to wait for service stable or the deployment finishes. (stable|deployed)" default:"stable" enum:"stable,deployed"`
 	SuspendAutoScaling   *bool  `help:"suspend application auto-scaling attached with the ECS service"`
 	ResumeAutoScaling    *bool  `help:"resume application auto-scaling attached with the ECS service"`
 	AutoScalingMin       *int32 `help:"set minimum capacity of application auto-scaling attached with the ECS service"`
@@ -102,7 +103,7 @@ func (d *App) Deploy(ctx context.Context, opt DeployOption) error {
 		return err
 	}
 
-	doWait, err := d.WaitFunc(sv, d.confirmPrimaryTD(tdArn))
+	doWait, err := d.WaitFunc(sv, d.confirmPrimaryTD(tdArn), opt.WaitUntil)
 	if err != nil {
 		return err
 	}

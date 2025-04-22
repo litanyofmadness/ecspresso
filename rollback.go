@@ -20,6 +20,7 @@ type RollbackOption struct {
 	DryRun                   bool   `help:"dry run" default:"false"`
 	DeregisterTaskDefinition bool   `help:"deregister the rolled-back task definition. not works with --no-wait" default:"true" negatable:""`
 	Wait                     bool   `help:"wait for the service stable" default:"true" negatable:""`
+	WaitUntil                string `help:"Choose whether to wait for service stable or the deployment finishes. (stable|deployed)" default:"stable" enum:"stable,deployed"`
 	RollbackEvents           string `help:"roll back when specified events happened (DEPLOYMENT_FAILURE,DEPLOYMENT_STOP_ON_ALARM,DEPLOYMENT_STOP_ON_REQUEST,...) CodeDeploy only." default:""`
 }
 
@@ -53,7 +54,7 @@ func (d *App) Rollback(ctx context.Context, opt RollbackOption) error {
 	if err != nil {
 		return err
 	}
-	doWait, err := d.WaitFunc(sv, d.confirmPrimaryTD(targetArn))
+	doWait, err := d.WaitFunc(sv, d.confirmPrimaryTD(targetArn), opt.WaitUntil)
 	if err != nil {
 		return err
 	}
