@@ -6,5 +6,6 @@
   codedeploy: {
     application_name: 'myapp',
     deployment_group_name: 'mydeployment',
+    deployment_config_name: 'myConfigName',
   },
 }
