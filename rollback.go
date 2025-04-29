@@ -87,7 +87,7 @@ func (d *App) Rollback(ctx context.Context, opt RollbackOption) error {
 		return err
 	}
 
-	d.Log("Service is stable now. Completed!")
+	d.Log("Service is %s now. Completed!", opt.WaitUntil)
 
 	return d.rollbackTaskDefinition(ctx, rollbackedTdArn, opt)
 }

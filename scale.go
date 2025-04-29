@@ -17,6 +17,7 @@ func (o *ScaleOption) DeployOption() DeployOption {
 		SkipTaskDefinition:   true,
 		ForceNewDeployment:   false,
 		Wait:                 o.Wait,
+		WaitUntil:            string(waitUntilStable),
 		RollbackEvents:       "",
 		UpdateService:        false,
 		LatestTaskDefinition: false,

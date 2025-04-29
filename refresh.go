@@ -12,6 +12,7 @@ func (o *RefreshOption) DeployOption() DeployOption {
 		SkipTaskDefinition:   true,
 		ForceNewDeployment:   true,
 		Wait:                 o.Wait,
+		WaitUntil:            string(waitUntilStable),
 		RollbackEvents:       "",
 		UpdateService:        false,
 		LatestTaskDefinition: false,
