@@ -54,7 +54,7 @@ func (d *App) Rollback(ctx context.Context, opt RollbackOption) error {
 	if err != nil {
 		return err
 	}
-	doWait, err := d.WaitFunc(sv, d.confirmPrimaryTD(targetArn), opt.WaitUntil)
+	doWait, err := d.WaitFunc(sv, d.confirmPrimaryTD(targetArn), waitUntil(opt.WaitUntil))
 	if err != nil {
 		return err
 	}

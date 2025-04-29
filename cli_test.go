@@ -392,7 +392,7 @@ var cliTests = []struct {
 			DryRun:                   false,
 			DeregisterTaskDefinition: true, // v2
 			Wait:                     true,
-		        WaitUntil:                "stable",
+			WaitUntil:                "stable",
 			RollbackEvents:           "",
 		},
 	},
@@ -403,7 +403,7 @@ var cliTests = []struct {
 			DryRun:                   false,
 			DeregisterTaskDefinition: true, // v2
 			Wait:                     false,
-		        WaitUntil:                "stable",
+			WaitUntil:                "stable",
 			RollbackEvents:           "",
 		},
 	},
@@ -414,7 +414,7 @@ var cliTests = []struct {
 			DryRun:                   false,
 			DeregisterTaskDefinition: false,
 			Wait:                     true,
-		        WaitUntil:                "stable",
+			WaitUntil:                "stable",
 			RollbackEvents:           "",
 		},
 	},
@@ -632,9 +632,18 @@ var cliTests = []struct {
 		},
 	},
 	{
-		args:      []string{"wait"},
-		sub:       "wait",
-		subOption: &ecspresso.WaitOption{},
+		args: []string{"wait"},
+		sub:  "wait",
+		subOption: &ecspresso.WaitOption{
+			Until: "stable",
+		},
+	},
+	{
+		args: []string{"wait", "--until", "deployed"},
+		sub:  "wait",
+		subOption: &ecspresso.WaitOption{
+			Until: "deployed",
+		},
 	},
 	{
 		args: []string{"init", "--service", "myservice", "--config", "myconfig.yml"},

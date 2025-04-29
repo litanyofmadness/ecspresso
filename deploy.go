@@ -103,7 +103,7 @@ func (d *App) Deploy(ctx context.Context, opt DeployOption) error {
 		return err
 	}
 
-	doWait, err := d.WaitFunc(sv, d.confirmPrimaryTD(tdArn), opt.WaitUntil)
+	doWait, err := d.WaitFunc(sv, d.confirmPrimaryTD(tdArn), waitUntil(opt.WaitUntil))
 	if err != nil {
 		return err
 	}
@@ -168,7 +168,7 @@ func (d *App) Deploy(ctx context.Context, opt DeployOption) error {
 		return err
 	}
 
-	d.Log("Service is stable now. Completed!")
+	d.Log("Service is %s now. Completed!", opt.WaitUntil)
 	return nil
 }
 
