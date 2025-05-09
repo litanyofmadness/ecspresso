@@ -151,7 +151,10 @@ func setupPluginSecretsManager(ctx context.Context, p ConfigPlugin, c *Config) e
 
 func setupPluginExternal(ctx context.Context, p ConfigPlugin, c *Config) error {
 	extCfg := &external.Config{}
-	b, _ := json.Marshal(p.Config)
+	b, err := json.Marshal(p.Config)
+	if err != nil {
+		return fmt.Errorf("failed to marshal plugin config: %w", err)
+	}
 	if err := json.Unmarshal(b, extCfg); err != nil {
 		return fmt.Errorf("failed to unmarshal external plugin config: %w", err)
 	}
