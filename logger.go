@@ -12,6 +12,7 @@ import (
 
 var (
 	logLevel           = new(slog.LevelVar)
+	logFormat          string
 	commonLogger       = newLogger(os.Stderr)
 	slogHandlerOptions = &sloghandler.HandlerOptions{
 		Color: true,
@@ -21,8 +22,28 @@ var (
 	}
 )
 
+const (
+	logFormatText = "text"
+	logFormatJSON = "json"
+)
+
+func setLogFormat(format string) {
+	changed := format != logFormat
+	logFormat = format
+	if changed {
+		commonLogger = newLogger(os.Stderr)
+	}
+}
+
 func newLogger(w io.Writer) *slog.Logger {
-	return slog.New(sloghandler.NewLogHandler(w, slogHandlerOptions))
+	switch logFormat {
+	case logFormatJSON:
+		return slog.New(slog.NewJSONHandler(w, &slogHandlerOptions.HandlerOptions))
+	case logFormatText, "":
+		return slog.New(sloghandler.NewLogHandler(w, slogHandlerOptions))
+	default:
+		panic("unknown log format " + logFormat)
+	}
 }
 
 func LogDebug(f string, v ...interface{}) {

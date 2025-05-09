@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -261,7 +263,7 @@ func verifyResource(ctx context.Context, name string, verifyFunc func(context.Co
 	defer func() { verifyState.level-- }()
 	indent := strings.Repeat("  ", verifyState.level)
 	print := func(f string, args ...interface{}) {
-		fmt.Printf(indent+f+"\n", args...)
+		io.WriteString(os.Stdout, fmt.Sprintf(indent+f+"\n", args...))
 	}
 	print("%s", name)
 	var cached string

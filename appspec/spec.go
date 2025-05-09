@@ -1,6 +1,7 @@
 package appspec
 
 import (
+	"encoding/json"
 	"errors"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -27,6 +28,11 @@ func New() *AppSpec {
 
 func (a *AppSpec) String() string {
 	b, _ := yaml.Marshal(a)
+	return string(b)
+}
+
+func (a *AppSpec) JSON() string {
+	b, _ := json.Marshal(a)
 	return string(b)
 }
 

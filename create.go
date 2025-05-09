@@ -30,9 +30,9 @@ func (d *App) createService(ctx context.Context, opt DeployOption) error {
 
 	if opt.DryRun {
 		d.LogInfo("task definition:")
-		d.OutputJSONForAPI(os.Stderr, td)
+		OutputJSONForAPI(os.Stdout, td)
 		d.LogInfo("service definition:")
-		d.OutputJSONForAPI(os.Stderr, svd)
+		OutputJSONForAPI(os.Stdout, svd)
 		d.LogInfo("DRY RUN OK")
 		return nil
 	}

@@ -565,7 +565,7 @@ func (d *App) taskDefinitionArnForDeploy(ctx context.Context, sv *Service, opt D
 
 	if opt.DryRun {
 		d.LogInfo("task definition:")
-		d.OutputJSONForAPI(os.Stderr, td)
+		OutputJSONForAPI(os.Stdout, td)
 		return "", nil
 	}
 

@@ -611,7 +611,7 @@ var cliTests = []struct {
 		sub:  "revisions",
 		subOption: &ecspresso.RevisionsOption{
 			Revision: "",
-			Output:   "table",
+			Output:   "",
 		},
 	},
 	{

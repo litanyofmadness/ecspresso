@@ -6,6 +6,8 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"sort"
 	"time"
 
@@ -273,7 +275,7 @@ func (d *App) showServiceStatus(ctx context.Context, st *showState) error {
 	})
 	for _, event := range sv.Events {
 		if (*event.CreatedAt).After(st.lastEventAt) {
-			fmt.Println(formatEvent(event))
+			WriteOutput(serviceEvent(event))
 			st.lastEventAt = *event.CreatedAt
 		}
 	}
@@ -298,10 +300,21 @@ func (d *App) showServiceStatus(ctx context.Context, st *showState) error {
 }
 
 func (d *App) codeDeployProgressBar(ctx context.Context, dpID string) error {
-	bar := progressbar.NewOptions(100,
+	opts := []progressbar.Option{
 		progressbar.OptionSetDescription("Traffic shifted"),
 		progressbar.OptionSetWidth(20),
-	)
+	}
+	if logFormat == logFormatJSON {
+		// disable progress bar in JSON format
+		opts = append(opts, progressbar.OptionSetWriter(io.Discard))
+	} else {
+		opts = append(opts, progressbar.OptionSetWriter(os.Stdout))
+		defer func() {
+			// append new line after progress bar
+			os.Stdout.Write([]byte("\n"))
+		}()
+	}
+	bar := progressbar.NewOptions(100, opts...)
 	t := time.NewTicker(10 * time.Second)
 	lcEvents := map[string]cdTypes.LifecycleEventStatus{}
 	for {
@@ -339,8 +352,7 @@ func (d *App) codeDeployProgressBar(ctx context.Context, dpID string) error {
 			}
 		}
 	}
-	bar.Set(100)
-	fmt.Println()
+	bar.Finish()
 	return nil
 }
 

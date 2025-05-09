@@ -3,6 +3,7 @@ package ecspresso
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 )
@@ -17,6 +18,7 @@ type CLIOptions struct {
 	Timeout        *time.Duration    `help:"timeout. Override in a configuration file." env:"ECSPRESSO_TIMEOUT"`
 	FilterCommand  string            `help:"filter command" env:"ECSPRESSO_FILTER_COMMAND"`
 	Color          bool              `help:"enable colorized output" env:"ECSPRESSO_COLOR" default:"true" negatable:""`
+	LogFormat      string            `help:"log format" env:"ECSPRESSO_LOG_FORMAT" default:"text" enum:"text,json"`
 
 	Appspec    *AppSpecOption    `cmd:"" help:"output AppSpec YAML for CodeDeploy to STDOUT"`
 	Delete     *DeleteOption     `cmd:"" help:"delete service"`
@@ -103,8 +105,8 @@ func (opts *CLIOptions) ForSubCommand(sub string) interface{} {
 func dispatchCLI(ctx context.Context, sub string, usage func(), opts *CLIOptions) error {
 	switch sub {
 	case "version", "":
-		fmt.Println("ecspresso", Version)
-		return nil
+		_, err := WriteOutput("ecspresso " + Version)
+		return err
 	}
 	var appOpts []AppOption
 	if sub == "init" {
@@ -171,6 +173,14 @@ func CLI(ctx context.Context, parse CLIParseFunc) (int, error) {
 	if err != nil {
 		return 1, err
 	}
+	// set log format and level
+	setLogFormat(opts.LogFormat)
+	if opts.Debug {
+		logLevel.Set(slog.LevelDebug)
+	} else {
+		logLevel.Set(slog.LevelInfo)
+	}
+
 	if err := dispatchCLI(ctx, sub, usage, opts); err != nil {
 		return 1, err
 	}

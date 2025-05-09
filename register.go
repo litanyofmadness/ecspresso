@@ -28,7 +28,7 @@ func (d *App) Register(ctx context.Context, opt RegisterOption) error {
 	}
 	if opt.DryRun {
 		d.LogInfo("task definition:")
-		if err := d.OutputJSONForAPI(os.Stdout, td); err != nil {
+		if _, err := OutputJSONForAPI(os.Stdout, td); err != nil {
 			return err
 		}
 		d.LogInfo("DRY RUN OK")
@@ -41,7 +41,8 @@ func (d *App) Register(ctx context.Context, opt RegisterOption) error {
 	}
 
 	if opt.Output {
-		return d.OutputJSONForAPI(os.Stdout, newTd)
+		_, err := OutputJSONForAPI(os.Stdout, newTd)
+		return err
 	}
 	return nil
 }

@@ -9,13 +9,12 @@ import (
 	"github.com/itchyny/gojq"
 )
 
-func (d *App) OutputJSONForAPI(w io.Writer, v interface{}) error {
+func OutputJSONForAPI(w io.Writer, v interface{}) (int, error) {
 	b, err := MarshalJSONForAPI(v)
 	if err != nil {
-		return fmt.Errorf("failed to marshal json: %w", err)
+		return 0, fmt.Errorf("failed to marshal json: %w", err)
 	}
-	_, err = w.Write(b)
-	return err
+	return w.Write(b)
 }
 
 func MustMarshalJSONStringForAPI(v interface{}) string {

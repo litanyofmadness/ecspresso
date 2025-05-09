@@ -1,7 +1,9 @@
 package ecspresso
 
 import (
+	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -13,6 +15,12 @@ import (
 )
 
 var EventTimeFormat = sloghandler.TimeFormat
+
+type genericLogEvent struct {
+	Time  time.Time `json:"time"`
+	Level string    `json:"level"`
+	Msg   string    `json:"msg"`
+}
 
 func formatDeployment(dp types.Deployment) string {
 	return fmt.Sprintf(
@@ -34,19 +42,43 @@ func formatTaskSet(ts types.TaskSet) string {
 	)
 }
 
-func formatEvent(e types.ServiceEvent) string {
+type serviceEvent types.ServiceEvent
+
+func (e serviceEvent) String() string {
 	return fmt.Sprintf("%s %s",
 		e.CreatedAt.In(time.Local).Format(EventTimeFormat),
 		*e.Message,
 	)
 }
 
-func formatLogEvent(e logsTypes.OutputLogEvent) string {
+func (e serviceEvent) JSON() string {
+	t := e.CreatedAt.In(time.Local)
+	b, _ := json.Marshal(genericLogEvent{
+		Time:  t,
+		Level: slog.LevelInfo.String(),
+		Msg:   *e.Message,
+	})
+	return string(b)
+}
+
+type logEvent logsTypes.OutputLogEvent
+
+func (e logEvent) String() string {
 	t := time.Unix((*e.Timestamp / int64(1000)), 0)
 	return fmt.Sprintf("%s %s",
 		t.In(time.Local).Format(EventTimeFormat),
 		*e.Message,
 	)
+}
+
+func (e logEvent) JSON() string {
+	t := time.Unix((*e.Timestamp / int64(1000)), 0).In(time.Local)
+	b, _ := json.Marshal(genericLogEvent{
+		Time:  t,
+		Level: slog.LevelInfo.String(),
+		Msg:   *e.Message,
+	})
+	return string(b)
 }
 
 func formatScalableTarget(t aasTypes.ScalableTarget) string {

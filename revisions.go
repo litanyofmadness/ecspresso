@@ -16,7 +16,7 @@ import (
 
 type RevisionsOption struct {
 	Revision string `help:"revision number or 'current' or 'latest'" default:""`
-	Output   string `help:"output format (json, table, tsv)" default:"table" enum:"json,table,tsv"`
+	Output   string `help:"output format (json, table, tsv)" default:"" enum:"json,table,tsv,"`
 }
 
 type revision struct {
@@ -111,10 +111,14 @@ func (d *App) Revisions(ctx context.Context, opt RevisionsOption) error {
 			break
 		}
 	}
-	switch opt.Output {
+	outputFormat := opt.Output
+	if outputFormat == "" && logFormat == logFormatJSON {
+		outputFormat = logFormatJSON
+	}
+	switch outputFormat {
 	case "json":
 		revs.OutputJSON(os.Stdout)
-	case "table":
+	case "table", "":
 		revs.OutputTable(os.Stdout)
 	case "tsv":
 		revs.OutputTSV(os.Stdout)

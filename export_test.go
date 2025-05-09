@@ -21,6 +21,7 @@ var (
 	NewLogger          = newLogger
 	NewConfigLoader    = newConfigLoader
 	LogLevel           = logLevel
+	SetLogFormat       = setLogFormat
 	NewVerifier        = newVerifier
 	ArnToName          = arnToName
 	InitVerifyState    = initVerifyState

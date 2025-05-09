@@ -176,12 +176,6 @@ func New(ctx context.Context, opt *CLIOptions, newAppOptions ...AppOption) (*App
 		fn(&appOpts)
 	}
 
-	// set log level
-	if opt.Debug {
-		logLevel.Set(slog.LevelDebug)
-	} else {
-		logLevel.Set(slog.LevelInfo)
-	}
 	LogInfo("ecspresso version: %s", Version)
 
 	// load config file
@@ -212,7 +206,11 @@ func New(ctx context.Context, opt *CLIOptions, newAppOptions ...AppOption) (*App
 		loader:      appOpts.loader,
 		config:      appOpts.config,
 	}
-	d.logger = appOpts.logger.With("", d.Name())
+	if logFormat == logFormatJSON {
+		d.logger = appOpts.logger.With("cluster", d.Cluster, "service", d.Service)
+	} else {
+		d.logger = appOpts.logger.With("", d.Name())
+	}
 
 	d.LogDebug("config file path: %s", opt.ConfigFilePath)
 	d.LogDebug("timeout: %s", d.config.Timeout)
@@ -286,43 +284,85 @@ func (d *App) DescribeService(ctx context.Context) (*Service, error) {
 	return sv, nil
 }
 
+type DescribeServiceStatusOutput struct {
+	Service        string
+	Cluster        string
+	TaskDefinition string
+	Deployments    []types.Deployment
+	TaskSets       []types.TaskSet
+	AutoScaling    struct {
+		ScalableTargets []aasTypes.ScalableTarget
+		ScalingPolicies []aasTypes.ScalingPolicy
+	}
+	Events []types.ServiceEvent
+}
+
+func (s *DescribeServiceStatusOutput) String() string {
+	buf := &strings.Builder{}
+	fmt.Fprintln(buf, "Service:", s.Service)
+	fmt.Fprintln(buf, "Cluster:", arnToName(s.Cluster))
+	fmt.Fprintln(buf, "TaskDefinition:", arnToName(s.TaskDefinition))
+	if len(s.Deployments) > 0 {
+		fmt.Fprintln(buf, "Deployments:")
+		for _, dep := range s.Deployments {
+			fmt.Fprintln(buf, spcIndent+formatDeployment(dep))
+		}
+	}
+	if len(s.TaskSets) > 0 {
+		fmt.Fprintln(buf, "TaskSets:")
+		for _, ts := range s.TaskSets {
+			fmt.Fprintln(buf, spcIndent+formatTaskSet(ts))
+		}
+	}
+
+	fmt.Fprintln(buf, "AutoScaling:")
+	for _, target := range s.AutoScaling.ScalableTargets {
+		fmt.Fprintln(buf, formatScalableTarget(target))
+	}
+	for _, policy := range s.AutoScaling.ScalingPolicies {
+		fmt.Fprintln(buf, formatScalingPolicy(policy))
+	}
+
+	fmt.Fprintln(buf, "Events:")
+	for _, e := range s.Events {
+		fmt.Fprintln(buf, serviceEvent(e).String())
+	}
+	return buf.String()
+}
+
 func (d *App) DescribeServiceStatus(ctx context.Context, events int) (*Service, error) {
 	s, err := d.DescribeService(ctx)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Service:", *s.ServiceName)
-	fmt.Println("Cluster:", arnToName(*s.ClusterArn))
-	fmt.Println("TaskDefinition:", arnToName(*s.TaskDefinition))
-	if len(s.Deployments) > 0 {
-		fmt.Println("Deployments:")
-		for _, dep := range s.Deployments {
-			fmt.Println(spcIndent + formatDeployment(dep))
-		}
-	}
-	if len(s.TaskSets) > 0 {
-		fmt.Println("TaskSets:")
-		for _, ts := range s.TaskSets {
-			fmt.Println(spcIndent + formatTaskSet(ts))
-		}
+	out := &DescribeServiceStatusOutput{
+		Service:        *s.ServiceName,
+		Cluster:        *s.ClusterArn,
+		TaskDefinition: *s.TaskDefinition,
+		Deployments:    s.Deployments,
+		TaskSets:       s.TaskSets,
 	}
 
-	if err := d.describeAutoScaling(ctx, s); err != nil {
-		return nil, fmt.Errorf("failed to describe autoscaling: %w", err)
-	}
-
-	fmt.Println("Events:")
 	sort.SliceStable(s.Events, func(i, j int) bool {
 		return s.Events[i].CreatedAt.Before(*s.Events[j].CreatedAt)
 	})
 	head := lo.Max([]int{len(s.Events) - events, 0})
 	for i := head; i < len(s.Events); i++ {
-		fmt.Println(formatEvent(s.Events[i]))
+		out.Events = append(out.Events, s.Events[i])
+	}
+
+	out.AutoScaling.ScalableTargets, out.AutoScaling.ScalingPolicies, err = d.describeAutoScaling(ctx, s)
+	if err != nil {
+		return nil, fmt.Errorf("failed to describe autoscaling: %w", err)
+	}
+
+	if _, err := WriteOutput(out); err != nil {
+		return nil, fmt.Errorf("failed to write output: %w", err)
 	}
 	return s, nil
 }
 
-func (d *App) describeAutoScaling(ctx context.Context, s *Service) error {
+func (d *App) describeAutoScaling(ctx context.Context, s *Service) ([]aasTypes.ScalableTarget, []aasTypes.ScalingPolicy, error) {
 	resourceId := fmt.Sprintf("service/%s/%s", arnToName(*s.ClusterArn), *s.ServiceName)
 	tout, err := d.autoScaling.DescribeScalableTargets(
 		ctx,
@@ -336,17 +376,12 @@ func (d *App) describeAutoScaling(ctx context.Context, s *Service) error {
 		var oe *smithy.OperationError
 		if errors.As(err, &oe) {
 			d.LogWarn("failed to describe scalable targets: %s", oe)
-			return nil
+			return nil, nil, nil
 		}
-		return fmt.Errorf("failed to describe scalable targets: %w", err)
+		return nil, nil, fmt.Errorf("failed to describe scalable targets: %w", err)
 	}
 	if len(tout.ScalableTargets) == 0 {
-		return nil
-	}
-
-	fmt.Println("AutoScaling:")
-	for _, target := range tout.ScalableTargets {
-		fmt.Println(formatScalableTarget(target))
+		return tout.ScalableTargets, nil, nil
 	}
 
 	pout, err := d.autoScaling.DescribeScalingPolicies(
@@ -361,14 +396,12 @@ func (d *App) describeAutoScaling(ctx context.Context, s *Service) error {
 		var oe *smithy.OperationError
 		if errors.As(err, &oe) {
 			d.LogWarn("failed to describe scaling policies: %s", oe)
-			return nil
+			return tout.ScalableTargets, nil, nil
 		}
-		return fmt.Errorf("failed to describe scaling policies: %w", err)
+		return tout.ScalableTargets, nil, fmt.Errorf("failed to describe scaling policies: %w", err)
 	}
-	for _, policy := range pout.ScalingPolicies {
-		fmt.Println(formatScalingPolicy(policy))
-	}
-	return nil
+
+	return tout.ScalableTargets, pout.ScalingPolicies, nil
 }
 
 func (d *App) DescribeTaskStatus(ctx context.Context, task *types.Task, watchContainer *types.ContainerDefinition) error {
@@ -436,7 +469,7 @@ func (d *App) GetLogEvents(ctx context.Context, logGroup string, logStream strin
 		return nextToken, nil
 	}
 	for _, event := range out.Events {
-		fmt.Println(formatLogEvent(event))
+		WriteOutput(logEvent(event))
 	}
 	return out.NextForwardToken, nil
 }
