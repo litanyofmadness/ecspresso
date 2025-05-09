@@ -3,6 +3,7 @@ package ecspresso
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -14,6 +15,12 @@ import (
 )
 
 var EventTimeFormat = sloghandler.TimeFormat
+
+type genericLogEvent struct {
+	Time  time.Time `json:"time"`
+	Level string    `json:"level"`
+	Msg   string    `json:"msg"`
+}
 
 func formatDeployment(dp types.Deployment) string {
 	return fmt.Sprintf(
@@ -44,6 +51,16 @@ func (e serviceEvent) String() string {
 	)
 }
 
+func (e serviceEvent) JSON() string {
+	t := e.CreatedAt.In(time.Local)
+	b, _ := json.Marshal(genericLogEvent{
+		Time:  t,
+		Level: slog.LevelInfo.String(),
+		Msg:   *e.Message,
+	})
+	return string(b)
+}
+
 type logEvent logsTypes.OutputLogEvent
 
 func (e logEvent) String() string {
@@ -55,13 +72,11 @@ func (e logEvent) String() string {
 }
 
 func (e logEvent) JSON() string {
-	t := time.Unix((*e.Timestamp / int64(1000)), 0)
-	b, _ := json.Marshal(struct {
-		Time    time.Time
-		Message string
-	}{
-		Time:    t,
-		Message: *e.Message,
+	t := time.Unix((*e.Timestamp / int64(1000)), 0).In(time.Local)
+	b, _ := json.Marshal(genericLogEvent{
+		Time:  t,
+		Level: slog.LevelInfo.String(),
+		Msg:   *e.Message,
 	})
 	return string(b)
 }
