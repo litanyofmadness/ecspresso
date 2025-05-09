@@ -2,18 +2,19 @@ package ecspresso_test
 
 import (
 	"bytes"
+	"log/slog"
 	"testing"
 
 	"github.com/kayac/ecspresso/v2"
 )
 
-var logLevels = []string{"DEBUG", "INFO", "WARNING", "ERROR"}
+var logLevels = []slog.Level{slog.LevelDebug, slog.LevelInfo, slog.LevelWarn, slog.LevelError}
 
 func TestCommonLogger(t *testing.T) {
 	for _, level := range logLevels {
 		b := new(bytes.Buffer)
 		logger := ecspresso.NewLogger()
-		logger.SetOutput(ecspresso.NewLogFilter(b, level))
+		ecspresso.LogLevel.Set(level)
 		ecspresso.SetLogger(logger)
 
 		ecspresso.Log("test %s", level)
@@ -30,7 +31,7 @@ func TestLogger(t *testing.T) {
 	for _, level := range logLevels {
 		b := new(bytes.Buffer)
 		logger := ecspresso.NewLogger()
-		logger.SetOutput(ecspresso.NewLogFilter(b, level))
+		ecspresso.LogLevel.Set(level)
 		app.SetLogger(logger)
 
 		app.Log("test %s", "test")

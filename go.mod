@@ -24,10 +24,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.19
 	github.com/aws/aws-sdk-go-v2/service/vpclattice v1.14.2
 	github.com/aws/smithy-go v1.22.2
-	github.com/fatih/color v1.16.0
+	github.com/fatih/color v1.18.0
 	github.com/fujiwara/cfn-lookup v1.1.0
 	github.com/fujiwara/ecsta v0.4.5
-	github.com/fujiwara/logutils v1.1.2
+	github.com/fujiwara/sloghandler v0.0.1
 	github.com/fujiwara/ssm-lookup v0.1.1
 	github.com/fujiwara/tfstate-lookup v1.4.3
 	github.com/goccy/go-yaml v1.12.0

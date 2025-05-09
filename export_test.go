@@ -3,7 +3,7 @@ package ecspresso
 import (
 	"context"
 	"io"
-	"log"
+	"log/slog"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
@@ -19,8 +19,8 @@ var (
 	IsLongArnFormat    = isLongArnFormat
 	ECRImageURLRegex   = ecrImageURLRegex
 	NewLogger          = newLogger
-	NewLogFilter       = newLogFilter
 	NewConfigLoader    = newConfigLoader
+	LogLevel           = logLevel
 	NewVerifier        = newVerifier
 	ArnToName          = arnToName
 	InitVerifyState    = initVerifyState
@@ -32,11 +32,11 @@ var (
 
 type ModifyAutoScalingParams = modifyAutoScalingParams
 
-func (d *App) SetLogger(logger *log.Logger) {
+func (d *App) SetLogger(logger *slog.Logger) {
 	d.logger = logger
 }
 
-func SetLogger(logger *log.Logger) {
+func SetLogger(logger *slog.Logger) {
 	commonLogger = logger
 }
 

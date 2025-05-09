@@ -2,54 +2,44 @@ package ecspresso
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 
-	"github.com/fatih/color"
-	"github.com/fujiwara/logutils"
+	"github.com/fujiwara/sloghandler"
 )
 
 var (
-	commonLogger *log.Logger
+	logLevel           = new(slog.LevelVar)
+	commonLogger       = slog.New(sloghandler.NewLogHandler(os.Stderr, slogHandlerOptions))
+	slogHandlerOptions = &sloghandler.HandlerOptions{
+		Color: true,
+		HandlerOptions: slog.HandlerOptions{
+			Level: logLevel,
+		},
+	}
 )
 
-func init() {
-	commonLogger = newLogger()
-	commonLogger.SetOutput(newLogFilter(os.Stderr, "INFO"))
-}
-
-func newLogFilter(w io.Writer, minLevel string) *logutils.LevelFilter {
-	return &logutils.LevelFilter{
-		Levels: []logutils.LogLevel{"DEBUG", "INFO", "WARNING", "ERROR"},
-		ModifierFuncs: []logutils.ModifierFunc{
-			nil, // DEBUG
-			nil, // default
-			logutils.Color(color.FgYellow),
-			logutils.Color(color.FgRed),
-		},
-		MinLevel: logutils.LogLevel(minLevel),
-		Writer:   w,
-	}
-}
-
-func newLogger() *log.Logger {
-	return log.New(io.Discard, "", log.LstdFlags)
+func newLogger() *slog.Logger {
+	return slog.New(sloghandler.NewLogHandler(io.Discard, slogHandlerOptions))
 }
 
 func Log(f string, v ...interface{}) {
-	commonLogger.Printf(f, v...)
+	msg := fmt.Sprintf(f, v...)
+	commonLogger.Info(msg)
 }
 
 func (d *App) Log(f string, v ...interface{}) {
-	d.logger.Printf(d.Name()+" "+f, v...)
+	msg := fmt.Sprintf(f, v...)
+	d.logger.Info(msg)
 }
 
 func (d *App) LogJSON(v interface{}) {
 	b, err := json.Marshal(v)
 	if err != nil {
-		d.logger.Printf("[WARNING] failed to marshal json: %s", err)
+		d.logger.Warn("failed to marshal json", "error", err.Error())
 		return
 	}
-	d.logger.Println("[DEBUG] " + string(b))
+	fmt.Fprintln(os.Stderr, string(b)) // TODO
 }

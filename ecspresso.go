@@ -6,8 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
-	"os"
+	"log/slog"
 	"sort"
 	"strconv"
 	"strings"
@@ -136,13 +135,13 @@ type App struct {
 
 	config *Config
 	loader *configLoader
-	logger *log.Logger
+	logger *slog.Logger
 }
 
 type appOptions struct {
 	config *Config
 	loader *configLoader
-	logger *log.Logger
+	logger *slog.Logger
 }
 
 type AppOption func(*appOptions)
@@ -159,7 +158,7 @@ func WithConfigLoader(extstr, extcode map[string]string) AppOption {
 	}
 }
 
-func WithLogger(l *log.Logger) AppOption {
+func WithLogger(l *slog.Logger) AppOption {
 	return func(o *appOptions) {
 		o.logger = l
 	}
@@ -178,9 +177,9 @@ func New(ctx context.Context, opt *CLIOptions, newAppOptions ...AppOption) (*App
 
 	// set log level
 	if opt.Debug {
-		appOpts.logger.SetOutput(newLogFilter(os.Stderr, "DEBUG"))
+		logLevel.Set(slog.LevelDebug)
 	} else {
-		appOpts.logger.SetOutput(newLogFilter(os.Stderr, "INFO"))
+		logLevel.Set(slog.LevelInfo)
 	}
 	Log("[INFO] ecspresso version: %s", Version)
 
@@ -403,7 +402,7 @@ func (d *App) DescribeTaskStatus(ctx context.Context, task *types.Task, watchCon
 		if container.Reason != nil {
 			msg += ", reason: " + *container.Reason
 		}
-		return fmt.Errorf(msg)
+		return errors.New(msg)
 	} else if container.Reason != nil {
 		return fmt.Errorf("container: %s, reason: %s", *container.Name, *container.Reason)
 	}
