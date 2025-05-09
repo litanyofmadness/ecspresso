@@ -2,6 +2,7 @@ package ecspresso
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	"github.com/fujiwara/ssm-lookup/ssm"
 	"github.com/fujiwara/tfstate-lookup/tfstate"
 	"github.com/google/go-jsonnet"
+	"github.com/kayac/ecspresso/v2/external"
 	"github.com/kayac/ecspresso/v2/secretsmanager"
 	"github.com/samber/lo"
 )
@@ -35,6 +37,8 @@ func (p ConfigPlugin) Setup(ctx context.Context, c *Config) error {
 		return setupPluginSSM(ctx, p, c)
 	case "secretsmanager":
 		return setupPluginSecretsManager(ctx, p, c)
+	case "external":
+		return setupPluginExternal(ctx, p, c)
 	default:
 		return fmt.Errorf("plugin %s is not available", p.Name)
 	}
@@ -140,6 +144,28 @@ func setupPluginSecretsManager(ctx context.Context, p ConfigPlugin, c *Config) e
 		return err
 	}
 	if err := p.AppendJsonnetNativeFuncs(c, lookup.JsonnetNativeFuncs(ctx)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func setupPluginExternal(ctx context.Context, p ConfigPlugin, c *Config) error {
+	extCfg := &external.Config{}
+	b, err := json.Marshal(p.Config)
+	if err != nil {
+		return fmt.Errorf("failed to marshal plugin config: %w", err)
+	}
+	if err := json.Unmarshal(b, extCfg); err != nil {
+		return fmt.Errorf("failed to unmarshal external plugin config: %w", err)
+	}
+	ext, err := external.NewPlugin(ctx, extCfg)
+	if err != nil {
+		return err
+	}
+	if err := p.AppendFuncMap(c, ext.FuncMap(ctx)); err != nil {
+		return err
+	}
+	if err := p.AppendJsonnetNativeFuncs(c, ext.JsonnetNativeFuncs(ctx)); err != nil {
 		return err
 	}
 	return nil

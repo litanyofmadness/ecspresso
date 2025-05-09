@@ -8,6 +8,17 @@ ignore:
   tags:
     - cost-category
 plugins:
+  - name: external
+    config:
+      name: jq
+      command: ["jq", "-n"]
+      num_args: 1
+  - name: external
+    config:
+      name: cat
+      command: ["cat"]
+      parser: string
+      num_args: 1
   - name: tfstate
     config:
       url: "./terraform.tfstate"

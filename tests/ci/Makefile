@@ -3,7 +3,6 @@
 export CLUSTER := ecspresso-test
 export SERVICE := nginx
 # export TFSTATE_BUCKET := ecspresso-test
-export NOW := $(shell date +%Y%m%d%H%M%S)
 export CLIENT_TOKEN := $(shell uuidgen)
 export DEPLOYMENT_CONTROLLER ?= ECS
 ECSPRESSO := ecspresso --envfile envfile
