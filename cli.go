@@ -105,8 +105,8 @@ func (opts *CLIOptions) ForSubCommand(sub string) interface{} {
 func dispatchCLI(ctx context.Context, sub string, usage func(), opts *CLIOptions) error {
 	switch sub {
 	case "version", "":
-		fmt.Println("ecspresso", Version)
-		return nil
+		_, err := WriteOutput("ecspresso " + Version)
+		return err
 	}
 	var appOpts []AppOption
 	if sub == "init" {

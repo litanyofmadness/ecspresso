@@ -36,7 +36,7 @@ func (d *App) Diff(ctx context.Context, opt DiffOption) error {
 	ctx, cancel := d.Start(ctx)
 	defer cancel()
 	if opt.w == nil {
-		opt.w = os.Stdout
+		opt.w = defaultWriteTo
 	}
 
 	var remoteTaskDefArn string

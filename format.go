@@ -1,6 +1,7 @@
 package ecspresso
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -34,19 +35,35 @@ func formatTaskSet(ts types.TaskSet) string {
 	)
 }
 
-func formatEvent(e types.ServiceEvent) string {
+type serviceEvent types.ServiceEvent
+
+func (e serviceEvent) String() string {
 	return fmt.Sprintf("%s %s",
 		e.CreatedAt.In(time.Local).Format(EventTimeFormat),
 		*e.Message,
 	)
 }
 
-func formatLogEvent(e logsTypes.OutputLogEvent) string {
+type logEvent logsTypes.OutputLogEvent
+
+func (e logEvent) String() string {
 	t := time.Unix((*e.Timestamp / int64(1000)), 0)
 	return fmt.Sprintf("%s %s",
 		t.In(time.Local).Format(EventTimeFormat),
 		*e.Message,
 	)
+}
+
+func (e logEvent) JSON() string {
+	t := time.Unix((*e.Timestamp / int64(1000)), 0)
+	b, _ := json.Marshal(struct {
+		Time    time.Time
+		Message string
+	}{
+		Time:    t,
+		Message: *e.Message,
+	})
+	return string(b)
 }
 
 func formatScalableTarget(t aasTypes.ScalableTarget) string {

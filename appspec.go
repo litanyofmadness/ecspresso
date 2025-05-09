@@ -52,6 +52,6 @@ func (d *App) AppSpec(ctx context.Context, opt AppSpecOption) error {
 		spec.Hooks = d.config.AppSpec.Hooks
 	}
 
-	fmt.Print(spec.String())
-	return nil
+	_, err = WriteOutput(spec)
+	return err
 }
