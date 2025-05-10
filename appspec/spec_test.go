@@ -80,3 +80,24 @@ func TestAppSpec(t *testing.T) {
 		t.Error("failed to Unmarsal", diff)
 	}
 }
+
+func TestAppSpecJSON(t *testing.T) {
+	var s appspec.AppSpec
+	err := config.LoadWithEnvJSON(&s, "test.json")
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(s.String())
+	if diff := cmp.Diff(&s, expected); diff != "" {
+		t.Error(diff)
+	}
+
+	// round trip
+	r, err := appspec.Unmarsal([]byte(s.JSON()))
+	if err != nil {
+		t.Error(err)
+	}
+	if diff := cmp.Diff(r, expected); diff != "" {
+		t.Error("failed to Unmarsal", diff)
+	}
+}
