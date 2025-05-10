@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
@@ -61,4 +62,9 @@ func (opt *DiffOption) SetWriter(w io.Writer) {
 
 func (i *ConfigIgnore) FilterTags(tags []types.Tag) []types.Tag {
 	return i.filterTags(tags)
+}
+
+// SleepContext exposes sleepContext for testing
+func SleepContext(ctx context.Context, d time.Duration) {
+	sleepContext(ctx, d)
 }

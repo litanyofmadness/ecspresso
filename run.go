@@ -199,7 +199,7 @@ func (d *App) WaitRunTask(ctx context.Context, task *types.Task, watchContainer 
 
 	d.LogInfo("Watching container: %s", *watchContainer.Name)
 	logGroup, logStream := d.GetLogInfo(task, watchContainer)
-	time.Sleep(3 * time.Second) // wait for log stream
+	sleepContext(ctx, 3*time.Second) // wait for log stream
 
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)

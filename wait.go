@@ -159,7 +159,7 @@ func (d *App) WaitServiceStable(ctx context.Context, sv *Service) error {
 
 func (d *App) WaitServiceDeployCompleted(ctx context.Context, sv *Service) error {
 	d.LogInfo("Waiting for service deployed...(it will take a few minutes)")
-	time.Sleep(10 * time.Second) // wait for new deployment created
+	sleepContext(ctx, 10*time.Second) // wait for new deployment created
 
 	listResp, err := d.ecs.ListServiceDeployments(ctx, &ecs.ListServiceDeploymentsInput{
 		Cluster: &d.Cluster,
@@ -382,6 +382,6 @@ func (d *App) WaitTaskSetStable(ctx context.Context, sv *Service) error {
 				prev = ts.StabilityStatus
 			}
 		}
-		time.Sleep(10 * time.Second)
+		sleepContext(ctx, 10*time.Second)
 	}
 }

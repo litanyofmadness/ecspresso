@@ -78,7 +78,7 @@ func (d *App) Rollback(ctx context.Context, opt RollbackOption) error {
 		return nil
 	}
 
-	time.Sleep(delayForServiceChanged) // wait for service updated
+	sleepContext(ctx, delayForServiceChanged) // wait for service updated
 	if err := doWait(ctx, sv); err != nil {
 		if errors.As(err, &errNotFound) {
 			d.LogInfo("%s", err)

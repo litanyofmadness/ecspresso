@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ecs"
@@ -88,7 +87,7 @@ func (d *App) createService(ctx context.Context, opt DeployOption) error {
 		return nil
 	}
 
-	time.Sleep(delayForServiceChanged) // wait for service created
+	sleepContext(ctx, delayForServiceChanged) // wait for service created
 
 	sv, err := d.DescribeService(ctx)
 	if err != nil {

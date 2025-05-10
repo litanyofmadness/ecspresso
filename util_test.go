@@ -2,9 +2,11 @@ package ecspresso_test
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
@@ -206,4 +208,42 @@ func TestCompareTags(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSleepContext(t *testing.T) {
+	t.Run("normal sleep", func(t *testing.T) {
+		ctx := context.Background()
+		start := time.Now()
+		duration := 100 * time.Millisecond
+
+		ecspresso.SleepContext(ctx, duration)
+
+		elapsed := time.Since(start)
+		if elapsed < duration {
+			t.Errorf("Sleep duration was too short: %v, expected at least %v", elapsed, duration)
+		}
+	})
+
+	t.Run("context canceled", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		start := time.Now()
+		duration := 1 * time.Second
+
+		// Cancel the context after a short delay
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			cancel()
+		}()
+
+		// This should return as soon as the context is canceled
+		ecspresso.SleepContext(ctx, duration)
+
+		elapsed := time.Since(start)
+		if elapsed >= duration {
+			t.Errorf("Sleep did not respect context cancellation, duration: %v", elapsed)
+		}
+		if elapsed < 50*time.Millisecond {
+			t.Errorf("Sleep returned too quickly, expected at least some delay: %v", elapsed)
+		}
+	})
 }

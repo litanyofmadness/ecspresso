@@ -172,7 +172,7 @@ func (d *App) deregisterKeeps(ctx context.Context, opt DeregisterOption, inUse m
 			return fmt.Errorf("failed to deregister task definition: %w", err)
 		}
 		d.LogInfo("%s was deregistered successfully", name)
-		time.Sleep(time.Second)
+		sleepContext(ctx, time.Second)
 		deregistered++
 	}
 	d.LogInfo("%d task definitions were deregistered", deregistered)

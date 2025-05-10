@@ -1,10 +1,12 @@
 package ecspresso
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/arn"
@@ -139,4 +141,11 @@ func serviceVolumeConfigurationsToTask(vcs []types.ServiceVolumeConfiguration, d
 		})
 	}
 	return tvc
+}
+
+func sleepContext(ctx context.Context, d time.Duration) {
+	select {
+	case <-time.After(d):
+	case <-ctx.Done():
+	}
 }

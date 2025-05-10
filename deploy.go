@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"time"
 
 	"github.com/kayac/ecspresso/v2/appspec"
 	"github.com/samber/lo"
@@ -192,7 +191,7 @@ func (d *App) UpdateServiceTasks(ctx context.Context, taskDefinitionArn string, 
 	if err != nil {
 		return fmt.Errorf("failed to update service tasks: %w", err)
 	}
-	time.Sleep(delayForServiceChanged) // wait for service updated
+	sleepContext(ctx, delayForServiceChanged) // wait for service updated
 	return nil
 }
 
@@ -261,7 +260,7 @@ func (d *App) UpdateServiceAttributes(ctx context.Context, sv *Service, taskDefi
 	} else {
 		sv.ServiceArn = out.Service.ServiceArn
 	}
-	time.Sleep(delayForServiceChanged) // wait for service updated
+	sleepContext(ctx, delayForServiceChanged) // wait for service updated
 	return nil
 }
 
