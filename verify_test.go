@@ -1,7 +1,6 @@
 package ecspresso_test
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"testing"
@@ -169,25 +168,23 @@ func TestIsECRImage(t *testing.T) {
 func TestVerifyOKResource(t *testing.T) {
 	color.NoColor = true
 	for _, cache := range []bool{false, true} {
-		ecspresso.InitVerifyState(cache)
+		vs := ecspresso.NewVerifyState(cache)
 		for i := 0; i < 3; i++ {
-			out := extractStdout(t, func() {
-				err := ecspresso.VerifyResource(context.TODO(), "ok resource", func(_ context.Context) error {
-					return nil
-				})
-				if err != nil {
-					t.Error("unexpected error for ok resource", err)
-				}
+			r, err := vs.VerifyResource(context.TODO(), "ok resource", func(_ context.Context) error {
+				return nil
 			})
-			if !bytes.Contains(out, []byte("ok resource")) {
-				t.Error("unexpected output for ok resource")
+			if err != nil {
+				t.Error("unexpected error for ok resource", err)
 			}
-			if !bytes.Contains(out, []byte("[OK]")) {
-				t.Error("unexpected output [OK] for ok resource")
+			if r.Name != "ok resource" {
+				t.Error("unexpected output for ok resource", r.Name)
+			}
+			if r.Result != "OK" {
+				t.Error("unexpected output [OK] for ok resource", r.Result)
 			}
 			if cache && i >= 1 {
-				if !bytes.Contains(out, []byte("(cached)")) {
-					t.Error("unexpected output (cached) for ok resource")
+				if !r.Cached {
+					t.Error("unexpected output (cached) for ok resource", r.Cached)
 				}
 			}
 		}
@@ -197,26 +194,26 @@ func TestVerifyOKResource(t *testing.T) {
 func TestVerifyNGResource(t *testing.T) {
 	color.NoColor = true
 	for _, cache := range []bool{false, true} {
-		ecspresso.InitVerifyState(cache)
+		vs := ecspresso.NewVerifyState(cache)
 		for i := 0; i < 3; i++ {
-			out := extractStdout(t, func() {
-				err := ecspresso.VerifyResource(context.TODO(), "ng resource", func(_ context.Context) error {
-					return errors.New("XXX")
-				})
-				if err == nil {
-					t.Error("error must be returned for ng resource")
-				}
+			r, err := vs.VerifyResource(context.TODO(), "ng resource", func(_ context.Context) error {
+				return errors.New("XXX")
 			})
-			if !bytes.Contains(out, []byte("ng resource")) {
-				t.Error("unexpected output for ng resource")
+			if err == nil {
+				t.Error("error must be returned for ng resource")
+			}
+			if r.Name != "ng resource" {
+				t.Error("unexpected output for ng resource", r.Name)
+			}
+			if r.Result != "NG" {
+				t.Error("unexpected output [NG] for ng resource", r.Result)
+			}
+			if r.Error == "" {
+				t.Error("error must be returned for ng resource", r.Error)
 			}
 			if cache && i >= 1 {
-				if !bytes.Contains(out, []byte("[NG](cached) XXX")) {
-					t.Errorf("unexpected output (cached) for ng resource")
-				}
-			} else {
-				if !bytes.Contains(out, []byte("[NG] XXX")) {
-					t.Error("unexpected output [NG] for ng resource")
+				if !r.Cached {
+					t.Error("unexpected output (cached) for ng resource", r.Cached)
 				}
 			}
 		}
@@ -226,26 +223,20 @@ func TestVerifyNGResource(t *testing.T) {
 func TestVerifySkipResource(t *testing.T) {
 	color.NoColor = true
 	for _, cache := range []bool{false, true} {
-		ecspresso.InitVerifyState(cache)
+		vs := ecspresso.NewVerifyState(cache)
 		for i := 0; i < 3; i++ {
-			out := extractStdout(t, func() {
-				err := ecspresso.VerifyResource(context.TODO(), "skip resource", func(_ context.Context) error {
-					return ecspresso.ErrSkipVerify("hello")
-				})
-				if err != nil {
-					t.Error("unexpected error for skip resource", err)
-				}
+			r, err := vs.VerifyResource(context.TODO(), "skip resource", func(_ context.Context) error {
+				return ecspresso.ErrSkipVerify("hello")
 			})
-			if !bytes.Contains(out, []byte("skip resource")) {
-				t.Error("unexpected output for skip resource")
+			if err != nil {
+				t.Error("unexpected error for skip resource", err)
+			}
+			if r.Result != "SKIP" {
+				t.Error("unexpected output [SKIP] for skip resource", r.Result)
 			}
 			if cache && i >= 1 {
-				if !bytes.Contains(out, []byte("[SKIP](cached) hello")) {
-					t.Error("unexpected output (cached) for skip resource")
-				}
-			} else {
-				if !bytes.Contains(out, []byte("[SKIP] hello")) {
-					t.Error("unexpected output [SKIP] for skip resource")
+				if !r.Cached {
+					t.Error("unexpected output (cached) for skip resource", r.Cached)
 				}
 			}
 		}

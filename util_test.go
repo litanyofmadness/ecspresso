@@ -1,10 +1,7 @@
 package ecspresso_test
 
 import (
-	"bytes"
 	"context"
-	"io"
-	"os"
 	"testing"
 	"time"
 
@@ -124,21 +121,6 @@ func TestParseTags(t *testing.T) {
 			}
 		}
 	}
-}
-
-func extractStdout(t *testing.T, fn func()) []byte {
-	t.Helper()
-	org := os.Stdout
-	defer func() {
-		os.Stdout = org
-	}()
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	fn()
-	w.Close()
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
-	return buf.Bytes()
 }
 
 func TestMap2str(t *testing.T) {

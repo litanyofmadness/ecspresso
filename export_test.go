@@ -25,8 +25,7 @@ var (
 	SetLogFormat       = setLogFormat
 	NewVerifier        = newVerifier
 	ArnToName          = arnToName
-	InitVerifyState    = initVerifyState
-	VerifyResource     = verifyResource
+	NewVerifyState     = newVerifyState
 	Map2str            = map2str
 	DiffServices       = diffServices
 	DiffTaskDefs       = diffTaskDefs
