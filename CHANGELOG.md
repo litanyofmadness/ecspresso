@@ -1,5 +1,22 @@
 # Changelog
 
+## [v2.5.0](https://github.com/kayac/ecspresso/compare/v2.4.6...v2.5.0) - 2025-05-10
+- Pin external actions to mitigate supply chain attacks by @mashiike in https://github.com/kayac/ecspresso/pull/816
+- Bump github.com/golang-jwt/jwt/v4 from 4.5.1 to 4.5.2 by @dependabot in https://github.com/kayac/ecspresso/pull/819
+- Bump github.com/golang-jwt/jwt/v5 from 5.2.1 to 5.2.2 by @dependabot in https://github.com/kayac/ecspresso/pull/818
+- Bump golang.org/x/crypto from 0.32.0 to 0.35.0 by @dependabot in https://github.com/kayac/ecspresso/pull/826
+- Feature Request: new option: wait for Service Deployment, not for Service Stable by @sugitak in https://github.com/kayac/ecspresso/pull/821
+- Add deploy --wait-until option. by @fujiwara in https://github.com/kayac/ecspresso/pull/828
+- set WaitUntil for internal use. by @fujiwara in https://github.com/kayac/ecspresso/pull/830
+- Bump the aws-sdk-go-v2 group across 1 directory with 16 updates by @dependabot in https://github.com/kayac/ecspresso/pull/812
+- Add external plugin by @fujiwara in https://github.com/kayac/ecspresso/pull/760
+- Add deployment_config_name to config of CodeDeploy. by @fujiwara in https://github.com/kayac/ecspresso/pull/829
+- switch a logger to log/slog. by @fujiwara in https://github.com/kayac/ecspresso/pull/834
+- Add JSON format support for logs and outputs by @fujiwara in https://github.com/kayac/ecspresso/pull/835
+- replace time.Sleep with sleepContext for handling context cancellation by @fujiwara in https://github.com/kayac/ecspresso/pull/836
+- refactor: improve verify module to use contextualized state by @fujiwara in https://github.com/kayac/ecspresso/pull/837
+- feat: add JSON support for AppSpec by @fujiwara in https://github.com/kayac/ecspresso/pull/838
+
 ## [v2.4.6](https://github.com/kayac/ecspresso/compare/v2.4.5...v2.4.6) - 2025-03-01
 - Bump golang.org/x/crypto from 0.24.0 to 0.31.0 by @dependabot in https://github.com/kayac/ecspresso/pull/779
 - update golang.org/x/net v0.34.0 by @fujiwara in https://github.com/kayac/ecspresso/pull/782
