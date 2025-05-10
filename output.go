@@ -36,9 +36,19 @@ func WriteOutput(v any) (int, error) {
 			return OutputJSONForAPI(w, v)
 		}
 	case logFormatText, "":
-		if s, ok := v.(stringer); ok {
-			return io.WriteString(w, s.String()+"\n")
-		} else {
+		switch v := v.(type) {
+		case stringer:
+			s := v.String()
+			if strings.HasSuffix(s, "\n") {
+				return io.WriteString(w, s)
+			}
+			return io.WriteString(w, s+"\n")
+		case string:
+			if strings.HasSuffix(v, "\n") {
+				return io.WriteString(w, v)
+			}
+			return io.WriteString(w, v+"\n")
+		default:
 			return io.WriteString(w, fmt.Sprintf("%s\n", v))
 		}
 	}
