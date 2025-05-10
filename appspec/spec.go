@@ -15,9 +15,9 @@ var (
 )
 
 type AppSpec struct {
-	Version   *string     `yaml:"version"`
-	Resources []*Resource `yaml:"Resources,omitempty"`
-	Hooks     []*Hook     `yaml:"Hooks,omitempty"`
+	Version   *string     `yaml:"version" json:"version"`
+	Resources []*Resource `yaml:"Resources,omitempty" json:"Resources,omitempty"`
+	Hooks     []*Hook     `yaml:"Hooks,omitempty" json:"Hooks,omitempty"`
 }
 
 func New() *AppSpec {
@@ -32,7 +32,7 @@ func (a *AppSpec) String() string {
 }
 
 func (a *AppSpec) JSON() string {
-	b, _ := json.Marshal(a)
+	b, _ := json.MarshalIndent(a, "", "  ")
 	return string(b)
 }
 
@@ -86,47 +86,47 @@ func NewWithService(sv *types.Service, tdArn string) (*AppSpec, error) {
 }
 
 type Resource struct {
-	TargetService *TargetService `yaml:"TargetService,omitempty"`
+	TargetService *TargetService `yaml:"TargetService,omitempty" json:"TargetService,omitempty"`
 }
 
 type TargetService struct {
-	Type       *string     `yaml:"Type,omitempty"`
-	Properties *Properties `yaml:"Properties,omitempty"`
+	Type       *string     `yaml:"Type,omitempty" json:"Type,omitempty"`
+	Properties *Properties `yaml:"Properties,omitempty" json:"Properties,omitempty"`
 }
 
 type Properties struct {
-	TaskDefinition           *string                     `yaml:"TaskDefinition,omitempty"`
-	LoadBalancerInfo         *LoadBalancerInfo           `yaml:"LoadBalancerInfo,omitempty"`
-	PlatformVersion          *string                     `yaml:"PlatformVersion,omitempty"`
-	NetworkConfiguration     *NetworkConfiguration       `yaml:"NetworkConfiguration,omitempty"`
-	CapacityProviderStrategy []*CapacityProviderStrategy `yaml:"CapacityProviderStrategy,omitempty"`
+	TaskDefinition           *string                     `yaml:"TaskDefinition,omitempty" json:"TaskDefinition,omitempty"`
+	LoadBalancerInfo         *LoadBalancerInfo           `yaml:"LoadBalancerInfo,omitempty" json:"LoadBalancerInfo,omitempty"`
+	PlatformVersion          *string                     `yaml:"PlatformVersion,omitempty" json:"PlatformVersion,omitempty"`
+	NetworkConfiguration     *NetworkConfiguration       `yaml:"NetworkConfiguration,omitempty" json:"NetworkConfiguration,omitempty"`
+	CapacityProviderStrategy []*CapacityProviderStrategy `yaml:"CapacityProviderStrategy,omitempty" json:"CapacityProviderStrategy,omitempty"`
 }
 
 type LoadBalancerInfo struct {
-	ContainerName *string `yaml:"ContainerName"`
-	ContainerPort *int32  `yaml:"ContainerPort"`
+	ContainerName *string `yaml:"ContainerName" json:"ContainerName"`
+	ContainerPort *int32  `yaml:"ContainerPort" json:"ContainerPort"`
 }
 
 type NetworkConfiguration struct {
-	AwsvpcConfiguration *AwsVpcConfiguration `yaml:"AwsvpcConfiguration,omitempty"`
+	AwsvpcConfiguration *AwsVpcConfiguration `yaml:"AwsvpcConfiguration,omitempty" json:"AwsvpcConfiguration,omitempty"`
 }
 
 type AwsVpcConfiguration struct {
-	AssignPublicIp types.AssignPublicIp `yaml:"AssignPublicIp,omitempty"`
-	SecurityGroups []string             `yaml:"SecurityGroups,omitempty"`
-	Subnets        []string             `yaml:"Subnets,omitempty"`
+	AssignPublicIp types.AssignPublicIp `yaml:"AssignPublicIp,omitempty" json:"AssignPublicIp,omitempty"`
+	SecurityGroups []string             `yaml:"SecurityGroups,omitempty" json:"SecurityGroups,omitempty"`
+	Subnets        []string             `yaml:"Subnets,omitempty" json:"Subnets,omitempty"`
 }
 
 type CapacityProviderStrategy struct {
-	CapacityProvider *string `yaml:"CapacityProvider,omitempty"`
-	Base             int32   `yaml:"Base,omitempty"`
-	Weight           int32   `yaml:"Weight,omitempty"`
+	CapacityProvider *string `yaml:"CapacityProvider,omitempty" json:"CapacityProvider,omitempty"`
+	Base             int32   `yaml:"Base,omitempty" json:"Base,omitempty"`
+	Weight           int32   `yaml:"Weight,omitempty" json:"Weight,omitempty"`
 }
 
 type Hook struct {
-	BeforeInstall         string `yaml:"BeforeInstall,omitempty"`
-	AfterInstall          string `yaml:"AfterInstall,omitempty"`
-	AfterAllowTestTraffic string `yaml:"AfterAllowTestTraffic,omitempty"`
-	BeforeAllowTraffic    string `yaml:"BeforeAllowTraffic,omitempty"`
-	AfterAllowTraffic     string `yaml:"AfterAllowTraffic,omitempty"`
+	BeforeInstall         string `yaml:"BeforeInstall,omitempty" json:"BeforeInstall,omitempty"`
+	AfterInstall          string `yaml:"AfterInstall,omitempty" json:"AfterInstall,omitempty"`
+	AfterAllowTestTraffic string `yaml:"AfterAllowTestTraffic,omitempty" json:"AfterAllowTestTraffic,omitempty"`
+	BeforeAllowTraffic    string `yaml:"BeforeAllowTraffic,omitempty" json:"BeforeAllowTraffic,omitempty"`
+	AfterAllowTraffic     string `yaml:"AfterAllowTraffic,omitempty" json:"AfterAllowTraffic,omitempty"`
 }
