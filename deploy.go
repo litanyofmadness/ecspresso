@@ -226,6 +226,12 @@ func svToUpdateServiceInput(sv *Service) *ecs.UpdateServiceInput {
 	if len(sv.VpcLatticeConfigurations) == 0 {
 		in.VpcLatticeConfigurations = []types.VpcLatticeConfiguration{}
 	}
+	// explicitly disable ServiceConnect (to remove the configuration)
+	if sv.ServiceConnectConfiguration == nil {
+		in.ServiceConnectConfiguration = &types.ServiceConnectConfiguration{
+			Enabled: false,
+		}
+	}
 	return in
 }
 
