@@ -35,6 +35,7 @@ const dryRunStr = "DRY RUN"
 
 var Version string
 var delayForServiceChanged = 3 * time.Second
+var refreshInterval = 10 * time.Second
 var waiterMaxDelay = 15 * time.Second
 var spcIndent = "  "
 

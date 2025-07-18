@@ -124,7 +124,7 @@ func (d *App) WaitServiceStable(ctx context.Context, sv *Service) error {
 	waitCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	tick := time.NewTicker(10 * time.Second)
+	tick := time.NewTicker(refreshInterval)
 	defer tick.Stop()
 	st := &showState{lastEventAt: time.Now()}
 	go func() {
@@ -159,17 +159,28 @@ func (d *App) WaitServiceStable(ctx context.Context, sv *Service) error {
 
 func (d *App) WaitServiceDeployCompleted(ctx context.Context, sv *Service) error {
 	d.LogInfo("Waiting for service deployed...(it will take a few minutes)")
-	sleepContext(ctx, 10*time.Second) // wait for new deployment created
-
-	listResp, err := d.ecs.ListServiceDeployments(ctx, &ecs.ListServiceDeploymentsInput{
-		Cluster: &d.Cluster,
-		Service: &d.Service,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to list service deployments: %w", err)
+	listResp := &ecs.ListServiceDeploymentsOutput{}
+	for range 4 {
+		sleepContext(ctx, delayForServiceChanged) // wait for new deployment created
+		var err error
+		listResp, err = d.ecs.ListServiceDeployments(ctx, &ecs.ListServiceDeploymentsInput{
+			Cluster: &d.Cluster,
+			Service: &d.Service,
+			Status: []types.ServiceDeploymentStatus{
+				types.ServiceDeploymentStatusInProgress,
+				types.ServiceDeploymentStatusPending,
+			},
+		})
+		if err != nil && errors.Is(err, context.Canceled) {
+			return err
+		}
+		if len(listResp.ServiceDeployments) > 0 {
+			break
+		}
 	}
 	if len(listResp.ServiceDeployments) == 0 {
-		return errors.New("no deployments found for the service")
+		d.LogInfo("No service deployments found for waiting")
+		return nil
 	}
 	// find the latest deployment
 	deployment := lo.MaxBy(listResp.ServiceDeployments, func(item types.ServiceDeploymentBrief, max types.ServiceDeploymentBrief) bool {
@@ -178,7 +189,7 @@ func (d *App) WaitServiceDeployCompleted(ctx context.Context, sv *Service) error
 	deploymentArn := deployment.ServiceDeploymentArn
 	d.LogInfo("Waiting for service deployment %s to complete...", arnToName(*deploymentArn))
 
-	tick := time.NewTicker(10 * time.Second)
+	tick := time.NewTicker(refreshInterval)
 	defer tick.Stop()
 	st := &showState{lastEventAt: time.Now()}
 	for range tick.C {
@@ -315,7 +326,8 @@ func (d *App) codeDeployProgressBar(ctx context.Context, dpID string) error {
 		}()
 	}
 	bar := progressbar.NewOptions(100, opts...)
-	t := time.NewTicker(10 * time.Second)
+	defer bar.Finish()
+	t := time.NewTicker(refreshInterval)
 	lcEvents := map[string]cdTypes.LifecycleEventStatus{}
 	for {
 		select {
@@ -334,7 +346,7 @@ func (d *App) codeDeployProgressBar(ctx context.Context, dpID string) error {
 		dep := out.DeploymentTarget
 		d.LogDebug("status: %s, %s", dep.EcsTarget.Status, *dep.EcsTarget.LastUpdatedAt)
 		if dep.EcsTarget.Status != "InProgress" {
-			break
+			return nil
 		}
 		for _, ev := range dep.EcsTarget.LifecycleEvents {
 			name := *ev.LifecycleEventName
@@ -352,8 +364,6 @@ func (d *App) codeDeployProgressBar(ctx context.Context, dpID string) error {
 			}
 		}
 	}
-	bar.Finish()
-	return nil
 }
 
 func (d *App) WaitTaskSetStable(ctx context.Context, sv *Service) error {
