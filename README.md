@@ -320,6 +320,59 @@ Events:
 2017/11/09 23:23:29 myService/default Service is stable now. Completed!
 ```
 
+### Blue/Green deployment (with ECS deployment controller)
+
+`ecspresso deploy` supports blue/green deployment using the ECS deployment controller. Configure ecs-service-def.json as follows. For minimal settings, use can set `deploymentController.type` and `deploymentConfiguration.strategy` as shown below.
+
+```json
+{
+  "deploymentController": {
+    "type": "ECS"
+  },
+  "deploymentConfiguration": {
+    "strategy": "BLUE_GREEN"
+  },
+  // ...
+```
+
+For more advanced settings, you can define `deploymentConfiguration` in ecs-service-def.json. For example, to set lifecycle hooks and deployment circuit breaker, you can use the following configuration:
+
+```json
+{
+  "deploymentController": {
+    "type": "ECS"
+  },
+  "deploymentConfiguration": {
+    "bakeTimeInMinutes": 1,
+    "deploymentCircuitBreaker": {
+      "enable": false,
+      "rollback": false
+    },
+    "lifecycleHooks": [
+      {
+        "hookTargetArn": "arn:aws:lambda:ap-northeast-1:123456789012:function:bg-hook",
+        "lifecycleStages": [
+          "PRE_SCALE_UP",
+          "POST_SCALE_UP",
+          "TEST_TRAFFIC_SHIFT",
+          "POST_TEST_TRAFFIC_SHIFT",
+          "PRODUCTION_TRAFFIC_SHIFT",
+          "POST_PRODUCTION_TRAFFIC_SHIFT"
+        ],
+        "roleArn": "arn:aws:iam::123456789012:role/ECSServiceRole"
+      }
+    ],
+    "maximumPercent": 200,
+    "minimumHealthyPercent": 100,
+    "strategy": "BLUE_GREEN"
+  }
+  // ...
+```
+
+For more details, See [Amazon ECS blue/green deployments
+](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/deployment-type-blue-green.html).
+
+
 ### Blue/Green deployment (with AWS CodeDeploy)
 
 `ecspresso deploy` can deploy services using the CODE_DEPLOY deployment controller. Configure ecs-service-def.json as follows.
@@ -432,6 +485,20 @@ Keys are in the same format as `aws ecs describe-services` output.
 - placementStrategy
 - role
 - etc.
+
+## Rollback
+
+`ecspresso rollback` rolls back a service to the previous task definition revision.
+
+```console
+$ ecspresso rollback --config ecspresso.yml
+```
+
+By default, ecspresso finds the previous task definition revision by listing the task definition family in descending order and selecting the revision immediately before the current one.
+
+For services using the ECS deployment controller, if there's an active deployment in progress, ecspresso will stop it with rollback. Otherwise, it updates the service with the previous task definition.
+
+For services using the CodeDeploy deployment controller, if there's an active deployment, ecspresso stops it with rollback. Otherwise, it creates a new deployment with the previous task definition.
 
 ## Example of run task
 
