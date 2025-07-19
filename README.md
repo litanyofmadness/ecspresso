@@ -114,7 +114,7 @@ Action `kayac/ecspresso@v2` supports `version-file: path/to/file`, which install
 
 ## Usage
 
-```
+```console
 Usage: ecspresso <command>
 
 Flags:
@@ -270,7 +270,7 @@ By default, ecspresso provides the following as template functions.
 
 ### `env`
 
-```
+```go-template
 "{{ env `NAME` `default value` }}"
 ```
 
@@ -278,7 +278,7 @@ This replaces the placeholder with the value of the environment variable NAME. I
 
 ### `must_env`
 
-```
+```go-template
 "{{ must_env `NAME` }}"
 ```
 
@@ -288,7 +288,7 @@ Defining critical values with `must_env` helps prevent unintended deployments by
 
 ### `json_escape`
 
-```
+```go-template
 "{{ must_env `JSON_VALUE` | json_escape }}"
 ```
 
@@ -324,7 +324,7 @@ Events:
 
 `ecspresso deploy` supports blue/green deployment using the ECS deployment controller. Configure ecs-service-def.json as follows. For minimal settings, use can set `deploymentController.type` and `deploymentConfiguration.strategy` as shown below.
 
-```json
+```jsonnet
 {
   "deploymentController": {
     "type": "ECS"
@@ -337,7 +337,7 @@ Events:
 
 For more advanced settings, you can define `deploymentConfiguration` in ecs-service-def.json. For example, to set lifecycle hooks and deployment circuit breaker, you can use the following configuration:
 
-```json
+```jsonnet
 {
   "deploymentController": {
     "type": "ECS"
@@ -377,7 +377,7 @@ For more details, See [Amazon ECS blue/green deployments
 
 `ecspresso deploy` can deploy services using the CODE_DEPLOY deployment controller. Configure ecs-service-def.json as follows.
 
-```json
+```jsonnet
 {
   "deploymentController": {
     "type": "CODE_DEPLOY"
@@ -695,7 +695,7 @@ ecspresso supports [Amazon EBS Volumes](https://docs.aws.amazon.com/ja_jp/Amazon
 To configure, define `volumeConfigurations` in service definitions, and `mountPoints` and `volumes` in task definitions.
 
 
-```json
+```jsonnet
 // ecs-service-def.json
   "volumeConfigurations": [
     {
@@ -716,7 +716,7 @@ To configure, define `volumeConfigurations` in service definitions, and `mountPo
   ]
 ```
 
-```json
+```jsonnet
 // ecs-task-def.json
 // containerDefinitions[].mountPoints
       "mountPoints": [
@@ -752,18 +752,18 @@ ecspresso supports [VPC Lattice](https://aws.amazon.com/vpc/lattice/) integratio
 1. Define `portMappings` in the task definition. The `name` field is required.
 ```json
 {
-    "containerDefinitions": [
+  "containerDefinitions": [
+    {
+      "name": "webserver",
+      "portMappings": [
         {
-            "name": "webserver",
-            "portMappings": [
-                {
-                    "name": "web-80-tcp",
-                    "containerPort": 80,
-                    "hostPort": 80,
-                    "protocol": "tcp",
-                    "appProtocol": "http"
-                }
-            ],
+          "name": "web-80-tcp",
+          "containerPort": 80,
+          "hostPort": 80,
+          "protocol": "tcp",
+          "appProtocol": "http"
+        }
+      ],
 ```
 
 2. Define `vpcLatticeConfigurations` in the service definition. The `portName`, `roleArn`, and `targetGroupArn` fields are required.`
@@ -1048,7 +1048,7 @@ plugins:
 
 In templates, functions are called with the specified prefixes.
 
-```json
+```go-template
 [
   "{{ first_tfstate `aws_s3_bucket.main.arn` }}",
   "{{ second_tfstate `aws_s3_bucket.main.arn` }}"
@@ -1181,7 +1181,7 @@ local ssm_list = std.native('ssm_list');
 
 The `secretsmanager_arn` template function resolves the Secrets Manager secret ARN by secret name.
 
-```json
+```go-template
   "secrets": [
     {
       "name": "FOO",
@@ -1263,7 +1263,7 @@ local jq = std.native('jq');
 }
 ```
 
-```json
+```go-template
 {
   "today": "{{ (jq `{Now: now | todateiso8601}`).Now }}"
 }
