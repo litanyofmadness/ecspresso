@@ -25,8 +25,8 @@ jobs:
           git fetch --prune --tags
           full=$(git describe --abbrev --tags --always)
           version=$(echo "$full" | cut -d- -f1)
-          rev=$(echo "$full" | cut -d- -f3)
-          echo "NIGHTLY_VERSION=${version}-nightly-${rev}" >> $GITHUB_ENV
+          commit=$(git log -1 --format="%h")
+          echo "NIGHTLY_VERSION=${version}-nightly-${commit}" >> $GITHUB_ENV
 
       - name: Check for same revision exists
         env:
