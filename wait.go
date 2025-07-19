@@ -16,7 +16,6 @@ import (
 	cdTypes "github.com/aws/aws-sdk-go-v2/service/codedeploy/types"
 	"github.com/aws/aws-sdk-go-v2/service/ecs"
 	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
-	"github.com/samber/lo"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -159,44 +158,25 @@ func (d *App) WaitServiceStable(ctx context.Context, sv *Service) error {
 
 func (d *App) WaitServiceDeployCompleted(ctx context.Context, sv *Service) error {
 	d.LogInfo("Waiting for service deployed...(it will take a few minutes)")
-	listResp := &ecs.ListServiceDeploymentsOutput{}
-	for range 4 {
-		sleepContext(ctx, delayForServiceChanged) // wait for new deployment created
-		var err error
-		listResp, err = d.ecs.ListServiceDeployments(ctx, &ecs.ListServiceDeploymentsInput{
-			Cluster: &d.Cluster,
-			Service: &d.Service,
-			Status: []types.ServiceDeploymentStatus{
-				types.ServiceDeploymentStatusInProgress,
-				types.ServiceDeploymentStatusPending,
-			},
-		})
-		if err != nil && errors.Is(err, context.Canceled) {
-			return err
+	deployment, err := d.findActiveECSDeployment(ctx, time.Second*10)
+	if err != nil {
+		if errors.As(err, &errNotFound) {
+			d.LogInfo("No active deployment found")
+			return nil // no active deployment, nothing to wait for
 		}
-		if len(listResp.ServiceDeployments) > 0 {
-			break
-		}
+		return err
 	}
-	if len(listResp.ServiceDeployments) == 0 {
-		d.LogInfo("No service deployments found for waiting")
-		return nil
-	}
-	// find the latest deployment
-	deployment := lo.MaxBy(listResp.ServiceDeployments, func(item types.ServiceDeploymentBrief, max types.ServiceDeploymentBrief) bool {
-		return item.CreatedAt.After(*max.CreatedAt)
-	})
-	deploymentArn := deployment.ServiceDeploymentArn
-	d.LogInfo("Waiting for service deployment %s to complete...", arnToName(*deploymentArn))
+	deploymentArn := aws.ToString(deployment.ServiceDeploymentArn)
+	d.LogInfo("Waiting for service deployment %s to complete...", arnToName(deploymentArn))
 
 	tick := time.NewTicker(refreshInterval)
 	defer tick.Stop()
 	st := &showState{lastEventAt: time.Now()}
-	for range tick.C {
+	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		default:
+		case <-tick.C:
 		}
 		if err := d.showServiceStatus(ctx, st); err != nil {
 			d.LogWarn("%s", err.Error())
@@ -204,7 +184,7 @@ func (d *App) WaitServiceDeployCompleted(ctx context.Context, sv *Service) error
 		}
 
 		resp, err := d.ecs.DescribeServiceDeployments(ctx, &ecs.DescribeServiceDeploymentsInput{
-			ServiceDeploymentArns: []string{*deploymentArn},
+			ServiceDeploymentArns: []string{deploymentArn},
 		})
 		if err != nil {
 			return fmt.Errorf("failed to describe service deployments: %w", err)
