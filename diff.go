@@ -307,6 +307,7 @@ func ServiceDefinitionForDiff(sv *Service) *ServiceForDiff {
 				MaximumPercent:        aws.Int32(200),
 				MinimumHealthyPercent: aws.Int32(100),
 				Strategy:              types.DeploymentStrategyRolling,
+				BakeTimeInMinutes:     aws.Int32(0),
 			}
 		} else {
 			if sv.DeploymentConfiguration.DeploymentCircuitBreaker == nil {
@@ -317,6 +318,9 @@ func ServiceDefinitionForDiff(sv *Service) *ServiceForDiff {
 			}
 			if sv.DeploymentConfiguration.Strategy == "" {
 				sv.DeploymentConfiguration.Strategy = types.DeploymentStrategyRolling
+			}
+			if sv.DeploymentConfiguration.BakeTimeInMinutes == nil {
+				sv.DeploymentConfiguration.BakeTimeInMinutes = aws.Int32(0)
 			}
 		}
 	} else if sv.SchedulingStrategy == types.SchedulingStrategyDaemon && sv.DeploymentConfiguration == nil {
