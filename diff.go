@@ -273,6 +273,10 @@ func ServiceDefinitionForDiff(sv *Service) *ServiceForDiff {
 	if sv == nil {
 		return nil
 	}
+	if sv.AvailabilityZoneRebalancing == "" {
+		sv.AvailabilityZoneRebalancing = types.AvailabilityZoneRebalancingDisabled
+	}
+
 	sort.SliceStable(sv.PlacementConstraints, func(i, j int) bool {
 		return jsonStr(sv.PlacementConstraints[i]) < jsonStr(sv.PlacementConstraints[j])
 	})
@@ -302,11 +306,21 @@ func ServiceDefinitionForDiff(sv *Service) *ServiceForDiff {
 				},
 				MaximumPercent:        aws.Int32(200),
 				MinimumHealthyPercent: aws.Int32(100),
+				Strategy:              types.DeploymentStrategyRolling,
+				BakeTimeInMinutes:     aws.Int32(0),
 			}
-		} else if sv.DeploymentConfiguration.DeploymentCircuitBreaker == nil {
-			sv.DeploymentConfiguration.DeploymentCircuitBreaker = &types.DeploymentCircuitBreaker{
-				Enable:   false,
-				Rollback: false,
+		} else {
+			if sv.DeploymentConfiguration.DeploymentCircuitBreaker == nil {
+				sv.DeploymentConfiguration.DeploymentCircuitBreaker = &types.DeploymentCircuitBreaker{
+					Enable:   false,
+					Rollback: false,
+				}
+			}
+			if sv.DeploymentConfiguration.Strategy == "" {
+				sv.DeploymentConfiguration.Strategy = types.DeploymentStrategyRolling
+			}
+			if sv.DeploymentConfiguration.BakeTimeInMinutes == nil {
+				sv.DeploymentConfiguration.BakeTimeInMinutes = aws.Int32(0)
 			}
 		}
 	} else if sv.SchedulingStrategy == types.SchedulingStrategyDaemon && sv.DeploymentConfiguration == nil {
