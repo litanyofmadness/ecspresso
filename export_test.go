@@ -11,24 +11,26 @@ import (
 )
 
 var (
-	SortTaskDefinition = sortTaskDefinition
-	ToNumberCPU        = toNumberCPU
-	ToNumberMemory     = toNumberMemory
-	CalcDesiredCount   = calcDesiredCount
-	ParseTags          = parseTags
-	ExtractRoleName    = extractRoleName
-	IsLongArnFormat    = isLongArnFormat
-	ECRImageURLRegex   = ecrImageURLRegex
-	NewLogger          = newLogger
-	NewConfigLoader    = newConfigLoader
-	LogLevel           = logLevel
-	SetLogFormat       = setLogFormat
-	NewVerifier        = newVerifier
-	ArnToName          = arnToName
-	NewVerifyState     = newVerifyState
-	Map2str            = map2str
-	DiffServices       = diffServices
-	DiffTaskDefs       = diffTaskDefs
+	SortTaskDefinition  = sortTaskDefinition
+	ToNumberCPU         = toNumberCPU
+	ToNumberMemory      = toNumberMemory
+	CalcDesiredCount    = calcDesiredCount
+	ParseTags           = parseTags
+	ExtractRoleName     = extractRoleName
+	IsLongArnFormat     = isLongArnFormat
+	ECRImageURLRegex    = ecrImageURLRegex
+	NewLogger           = newLogger
+	NewConfigLoader     = newConfigLoader
+	LogLevel            = logLevel
+	SetLogFormat        = setLogFormat
+	NewVerifier         = newVerifier
+	ArnToName           = arnToName
+	NewVerifyState      = newVerifyState
+	Map2str             = map2str
+	DiffServices        = diffServices
+	DiffTaskDefs        = diffTaskDefs
+	IsPermissionError   = isPermissionError
+	WrapPermissionError = wrapPermissionError
 )
 
 type ModifyAutoScalingParams = modifyAutoScalingParams

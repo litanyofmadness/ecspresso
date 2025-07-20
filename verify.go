@@ -279,6 +279,7 @@ const (
 	verifyResultOK      = "OK"
 	verifyResultNG      = "NG"
 	verifyResultSkip    = "SKIP"
+	verifyResultWarn    = "WARN"
 	verifyResultUnknown = "UNKNOWN"
 )
 
@@ -297,6 +298,8 @@ func (r *verifyResult) String() string {
 		buf.WriteString(color.RedString(r.Result))
 	case verifyResultSkip:
 		buf.WriteString(color.CyanString(r.Result))
+	case verifyResultWarn:
+		buf.WriteString(color.YellowString(r.Result))
 	default:
 		buf.WriteString(color.RedString(verifyResultUnknown))
 	}
@@ -325,6 +328,12 @@ func (vs *verifyState) VerifyResource(ctx context.Context, name string, verifyFu
 	err, hit := vs.cache.Do(ctx, name, verifyFunc)
 	r.Cached = hit
 	if err != nil {
+		var permErr ErrPermissionDenied
+		if errors.As(err, &permErr) {
+			r.Error = err.Error()
+			r.Result = verifyResultWarn
+			return r, nil
+		}
 		if errors.As(err, &errSkipVerify) {
 			r.Error = err.Error()
 			r.Result = verifyResultSkip
@@ -344,7 +353,7 @@ func (d *App) verifyCluster(ctx context.Context) error {
 		Clusters: []string{cluster},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to describe cluster %s: %w", cluster, err)
+		return wrapPermissionError(err)
 	} else if len(out.Clusters) == 0 {
 		return ErrNotFound(fmt.Sprintf("cluster %s is not found", cluster))
 	}
@@ -444,7 +453,7 @@ func (d *App) verifyVpcLatticeConfiguration(ctx context.Context, lc types.VpcLat
 		_, err := d.lattice.GetTargetGroup(ctx, &vpclattice.GetTargetGroupInput{
 			TargetGroupIdentifier: lc.TargetGroupArn,
 		})
-		return err
+		return wrapPermissionError(err)
 	}); err != nil {
 		return err
 	}
@@ -489,7 +498,7 @@ func (d *App) verifyDeploymentConfiguration(ctx context.Context, dc *types.Deplo
 				_, err := d.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
 					FunctionName: hook.HookTargetArn,
 				})
-				return err
+				return wrapPermissionError(err)
 			})
 			return err
 		})
@@ -513,8 +522,9 @@ func (d *App) verifyLoadBalancer(ctx context.Context, lb types.LoadBalancer, td 
 			TargetGroupArns: []string{tgArn},
 		})
 		if err != nil {
-			return err
-		} else if len(out.TargetGroups) == 0 {
+			return wrapPermissionError(err)
+		}
+		if len(out.TargetGroups) == 0 {
 			return ErrNotFound(fmt.Sprintf("target group %s is not found", tgArn))
 		}
 		return nil
@@ -542,8 +552,9 @@ func (d *App) verifyLoadBalancer(ctx context.Context, lb types.LoadBalancer, td 
 				TargetGroupArns: []string{tgArn},
 			})
 			if err != nil {
-				return err
-			} else if len(out.TargetGroups) == 0 {
+				return wrapPermissionError(err)
+			}
+			if len(out.TargetGroups) == 0 {
 				return ErrNotFound(fmt.Sprintf("target group %s is not found", tgArn))
 			}
 			return nil
@@ -878,7 +889,7 @@ func (d *App) verifyRole(ctx context.Context, roleArn, principalService string) 
 		RoleName: aws.String(roleName),
 	})
 	if err != nil {
-		return err
+		return wrapPermissionError(err)
 	}
 	doc, err := parseIAMPolicyDocument(*out.Role.AssumeRolePolicyDocument)
 	if err != nil {
