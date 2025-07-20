@@ -335,7 +335,7 @@ Events:
   // ...
 ```
 
-For more advanced settings, you can define `deploymentConfiguration` in ecs-service-def.json. For example, to set lifecycle hooks and deployment circuit breaker, you can use the following configuration:
+For more advanced settings, you can define `deploymentConfiguration`, `loadBalancers` and `serviceConnectConfiguration` in ecs-service-def.json. For example, using an application load balancer and set lifecycle hooks, you can use the following configuration:
 
 ```jsonnet
 {
@@ -365,7 +365,19 @@ For more advanced settings, you can define `deploymentConfiguration` in ecs-serv
     "maximumPercent": 200,
     "minimumHealthyPercent": 100,
     "strategy": "BLUE_GREEN"
-  }
+  },
+  "loadBalancers": [
+    {
+      "containerName": "app",
+      "containerPort": 80,
+      "targetGroupArn": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/my-target-group/1234567890abcdef"
+      "advancedConfiguration": {
+        "alternateTargetGroupArn": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/my-alternate-target-group/1234567890abcdef",
+        "productionListenerRule": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:listener-rule/my-production-listener-rule/1234567890abcdef",
+        "roleArn": "arn:aws:iam::123456789012:role/ECSServiceRole"
+      }
+    }
+  ],
   // ...
 ```
 
