@@ -22,6 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery"
 	"github.com/aws/aws-sdk-go-v2/service/vpclattice"
 	"github.com/aws/smithy-go"
@@ -133,6 +134,7 @@ type App struct {
 	elbv2       *elasticloadbalancingv2.Client
 	sd          *servicediscovery.Client
 	lattice     *vpclattice.Client
+	lambda      *lambda.Client
 	verifier    *verifier
 
 	config *Config
@@ -204,6 +206,7 @@ func New(ctx context.Context, opt *CLIOptions, newAppOptions ...AppOption) (*App
 		elbv2:       elasticloadbalancingv2.NewFromConfig(conf.awsv2Config),
 		sd:          servicediscovery.NewFromConfig(conf.awsv2Config),
 		lattice:     vpclattice.NewFromConfig(conf.awsv2Config),
+		lambda:      lambda.NewFromConfig(conf.awsv2Config),
 		loader:      appOpts.loader,
 		config:      appOpts.config,
 	}
