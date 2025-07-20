@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
+	"github.com/aws/smithy-go"
 	"github.com/fatih/color"
 	"github.com/kayac/ecspresso/v2"
 )
@@ -261,5 +262,188 @@ func TestVerifierIsAssumed(t *testing.T) {
 		if v.IsAssumed() != c.isAssumed {
 			t.Errorf("unexpected IsAssumed %d expected:%v got:%v", i, c.isAssumed, v.IsAssumed())
 		}
+	}
+}
+
+type mockAPIError struct {
+	code string
+}
+
+func (e mockAPIError) Error() string {
+	return "mock error: " + e.code
+}
+
+func (e mockAPIError) ErrorCode() string {
+	return e.code
+}
+
+func (e mockAPIError) ErrorMessage() string {
+	return "mock error: " + e.code
+}
+
+func (e mockAPIError) ErrorFault() smithy.ErrorFault {
+	return smithy.FaultClient
+}
+
+func TestIsPermissionError(t *testing.T) {
+	testCases := []struct {
+		name     string
+		err      error
+		expected bool
+	}{
+		{
+			name:     "AccessDeniedException",
+			err:      mockAPIError{code: "AccessDeniedException"},
+			expected: true,
+		},
+		{
+			name:     "UnauthorizedException",
+			err:      mockAPIError{code: "UnauthorizedException"},
+			expected: true,
+		},
+		{
+			name:     "Forbidden",
+			err:      mockAPIError{code: "Forbidden"},
+			expected: true,
+		},
+		{
+			name:     "AccessDenied",
+			err:      mockAPIError{code: "AccessDenied"},
+			expected: true,
+		},
+		{
+			name:     "InvalidUserID.NotFound",
+			err:      mockAPIError{code: "InvalidUserID.NotFound"},
+			expected: true,
+		},
+		{
+			name: "AccessDeniedException wrapped in OperationError",
+			err: &smithy.OperationError{
+				ServiceID:     "IAM",
+				OperationName: "GetRole",
+				Err:           mockAPIError{code: "AccessDeniedException"},
+			},
+			expected: true,
+		},
+		{
+			name: "Other error wrapped in OperationError",
+			err: &smithy.OperationError{
+				ServiceID:     "IAM",
+				OperationName: "GetRole",
+				Err:           mockAPIError{code: "ValidationException"},
+			},
+			expected: false,
+		},
+		{
+			name:     "Other error",
+			err:      mockAPIError{code: "ValidationException"},
+			expected: false,
+		},
+		{
+			name:     "Regular error",
+			err:      errors.New("regular error"),
+			expected: false,
+		},
+		{
+			name:     "Nil error",
+			err:      nil,
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := ecspresso.IsPermissionError(tc.err)
+			if result != tc.expected {
+				t.Errorf("isPermissionError(%v) = %v, expected %v", tc.err, result, tc.expected)
+			}
+		})
+	}
+}
+
+func TestVerifyWarnResource(t *testing.T) {
+	color.NoColor = true
+	for _, cache := range []bool{false, true} {
+		vs := ecspresso.NewVerifyState(cache)
+		for i := 0; i < 3; i++ {
+			r, err := vs.VerifyResource(context.TODO(), "warn resource", func(_ context.Context) error {
+				// Simulate AWS permission error
+				mockErr := mockAPIError{code: "AccessDeniedException"}
+				return ecspresso.WrapPermissionError(mockErr)
+			})
+			if err != nil {
+				t.Error("unexpected error for warn resource", err)
+			}
+			if r.Name != "warn resource" {
+				t.Error("unexpected output for warn resource", r.Name)
+			}
+			if r.Result != "WARN" {
+				t.Error("unexpected output [WARN] for warn resource", r.Result)
+			}
+			if r.Error == "" {
+				t.Error("error message must be set for warn resource", r.Error)
+			}
+			if cache && i >= 1 {
+				if !r.Cached {
+					t.Error("unexpected output (cached) for warn resource", r.Cached)
+				}
+			}
+		}
+	}
+}
+
+func TestWrapPermissionError(t *testing.T) {
+	testCases := []struct {
+		name     string
+		err      error
+		wantType string
+	}{
+		{
+			name:     "Permission error gets wrapped",
+			err:      mockAPIError{code: "AccessDeniedException"},
+			wantType: "ErrPermissionDenied",
+		},
+		{
+			name:     "Non-permission error stays unchanged",
+			err:      mockAPIError{code: "ValidationException"},
+			wantType: "mockAPIError",
+		},
+		{
+			name:     "Nil error stays nil",
+			err:      nil,
+			wantType: "nil",
+		},
+		{
+			name:     "Regular error stays unchanged",
+			err:      errors.New("regular error"),
+			wantType: "*errors.errorString",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := ecspresso.WrapPermissionError(tc.err)
+
+			switch tc.wantType {
+			case "nil":
+				if result != nil {
+					t.Errorf("expected nil, got %v", result)
+				}
+			case "ErrPermissionDenied":
+				var permErr ecspresso.ErrPermissionDenied
+				if !errors.As(result, &permErr) {
+					t.Errorf("expected ErrPermissionDenied, got %T", result)
+				}
+			case "mockAPIError":
+				var mockErr mockAPIError
+				if !errors.As(result, &mockErr) {
+					t.Errorf("expected mockAPIError, got %T", result)
+				}
+			case "*errors.errorString":
+				if result.Error() != tc.err.Error() {
+					t.Errorf("expected same error, got %v", result)
+				}
+			}
+		})
 	}
 }

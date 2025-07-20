@@ -21,6 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ecs/types"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
@@ -278,6 +279,7 @@ const (
 	verifyResultOK      = "OK"
 	verifyResultNG      = "NG"
 	verifyResultSkip    = "SKIP"
+	verifyResultWarn    = "WARN"
 	verifyResultUnknown = "UNKNOWN"
 )
 
@@ -296,6 +298,8 @@ func (r *verifyResult) String() string {
 		buf.WriteString(color.RedString(r.Result))
 	case verifyResultSkip:
 		buf.WriteString(color.CyanString(r.Result))
+	case verifyResultWarn:
+		buf.WriteString(color.YellowString(r.Result))
 	default:
 		buf.WriteString(color.RedString(verifyResultUnknown))
 	}
@@ -324,6 +328,12 @@ func (vs *verifyState) VerifyResource(ctx context.Context, name string, verifyFu
 	err, hit := vs.cache.Do(ctx, name, verifyFunc)
 	r.Cached = hit
 	if err != nil {
+		var permErr ErrPermissionDenied
+		if errors.As(err, &permErr) {
+			r.Error = err.Error()
+			r.Result = verifyResultWarn
+			return r, nil
+		}
 		if errors.As(err, &errSkipVerify) {
 			r.Error = err.Error()
 			r.Result = verifyResultSkip
@@ -343,7 +353,7 @@ func (d *App) verifyCluster(ctx context.Context) error {
 		Clusters: []string{cluster},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to describe cluster %s: %w", cluster, err)
+		return wrapPermissionError(err)
 	} else if len(out.Clusters) == 0 {
 		return ErrNotFound(fmt.Sprintf("cluster %s is not found", cluster))
 	}
@@ -373,38 +383,20 @@ func (d *App) verifyServiceDefinition(ctx context.Context) error {
 		}
 	}
 
-	// LB
+	// LoadBalancers
 	for i, lb := range sv.LoadBalancers {
 		name := fmt.Sprintf("LoadBalancer[%d]", i)
 		_, err := vs.VerifyResource(ctx, name, func(context.Context) error {
-			out, err := d.elbv2.DescribeTargetGroups(ctx, &elasticloadbalancingv2.DescribeTargetGroupsInput{
-				TargetGroupArns: []string{*lb.TargetGroupArn},
-			})
-			if err != nil {
-				return err
-			} else if len(out.TargetGroups) == 0 {
-				return ErrNotFound(fmt.Sprintf("target group %s is not found: %s", *lb.TargetGroupArn, err))
-			}
+			return d.verifyLoadBalancer(ctx, lb, td)
+		})
+		if err != nil {
+			return err
+		}
+	}
 
-			cname := aws.ToString(lb.ContainerName)
-			cport := aws.ToInt32(lb.ContainerPort)
-			var container *types.ContainerDefinition
-		CONTAINER_DEF:
-			for _, c := range td.ContainerDefinitions {
-				if aws.ToString(c.Name) != cname {
-					continue
-				}
-				for _, pm := range c.PortMappings {
-					if aws.ToInt32(pm.ContainerPort) == cport {
-						container = &c
-						break CONTAINER_DEF
-					}
-				}
-			}
-			if container == nil {
-				return fmt.Errorf("container name %s and port %d is not defined in task definition", cname, cport)
-			}
-			return nil
+	if sv.DeploymentConfiguration != nil {
+		_, err := vs.VerifyResource(ctx, "DeploymentConfiguration", func(context.Context) error {
+			return d.verifyDeploymentConfiguration(ctx, sv.DeploymentConfiguration)
 		})
 		if err != nil {
 			return err
@@ -436,40 +428,134 @@ func (d *App) verifyServiceDefinition(ctx context.Context) error {
 	for i, lc := range sv.VpcLatticeConfigurations {
 		name := fmt.Sprintf("VpcLatticeConfiguration[%d]", i)
 		_, err := vs.VerifyResource(ctx, name, func(context.Context) error {
-			roleArn := aws.ToString(lc.RoleArn)
-			if _, err := vs.VerifyResource(ctx, fmt.Sprintf("RoleArn[%s]", roleArn), func(ctx context.Context) error {
+			return d.verifyVpcLatticeConfiguration(ctx, lc, td)
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (d *App) verifyVpcLatticeConfiguration(ctx context.Context, lc types.VpcLatticeConfiguration, td *TaskDefinitionInput) error {
+	vs := ctx.Value(verifyStateKey).(*verifyState)
+
+	roleArn := aws.ToString(lc.RoleArn)
+	if _, err := vs.VerifyResource(ctx, fmt.Sprintf("RoleArn[%s]", roleArn), func(ctx context.Context) error {
+		return d.verifyRole(ctx, roleArn, "ecs.amazonaws.com")
+	}); err != nil {
+		return err
+	}
+
+	tgArn := aws.ToString(lc.TargetGroupArn)
+	if _, err := vs.VerifyResource(ctx, fmt.Sprintf("TargetGroup[%s]", tgArn), func(ctx context.Context) error {
+		_, err := d.lattice.GetTargetGroup(ctx, &vpclattice.GetTargetGroupInput{
+			TargetGroupIdentifier: lc.TargetGroupArn,
+		})
+		return wrapPermissionError(err)
+	}); err != nil {
+		return err
+	}
+
+	portName := aws.ToString(lc.PortName)
+	if _, err := vs.VerifyResource(ctx, fmt.Sprintf("PortName[%s]", portName), func(ctx context.Context) error {
+		if portName == "" {
+			return fmt.Errorf("portName is required for vpcLatticeConfiguration")
+		}
+		var portMappings []types.PortMapping
+		for _, cd := range td.ContainerDefinitions {
+			portMappings = append(portMappings, cd.PortMappings...)
+		}
+		if _, found := lo.Find(portMappings, func(pm types.PortMapping) bool {
+			return portName == aws.ToString(pm.Name)
+		}); !found {
+			return fmt.Errorf("portName %s is not found in any containerDefinitions", portName)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *App) verifyDeploymentConfiguration(ctx context.Context, dc *types.DeploymentConfiguration) error {
+	vs := ctx.Value(verifyStateKey).(*verifyState)
+	if dc == nil {
+		return nil
+	}
+	for i, hook := range dc.LifecycleHooks {
+		name := fmt.Sprintf("LifecycleHooks[%d]", i)
+		_, err := vs.VerifyResource(ctx, name, func(context.Context) error {
+			roleArn := *hook.RoleArn
+			_, err := vs.VerifyResource(ctx, fmt.Sprintf("RoleArn[%s]", roleArn), func(ctx context.Context) error {
 				return d.verifyRole(ctx, roleArn, "ecs.amazonaws.com")
-			}); err != nil {
+			})
+			if err != nil {
 				return err
 			}
-
-			tgArn := aws.ToString(lc.TargetGroupArn)
-			if _, err := vs.VerifyResource(ctx, fmt.Sprintf("TargetGroup[%s]", tgArn), func(ctx context.Context) error {
-				_, err := d.lattice.GetTargetGroup(ctx, &vpclattice.GetTargetGroupInput{
-					TargetGroupIdentifier: lc.TargetGroupArn,
+			_, err = vs.VerifyResource(ctx, fmt.Sprintf("HookTargetArn[%s]", aws.ToString(hook.HookTargetArn)), func(ctx context.Context) error {
+				_, err := d.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
+					FunctionName: hook.HookTargetArn,
 				})
-				return err
-			}); err != nil {
-				return err
-			}
+				return wrapPermissionError(err)
+			})
+			return err
+		})
+		if err != nil {
+			return err
+		}
+	}
 
-			portName := aws.ToString(lc.PortName)
-			if _, err := vs.VerifyResource(ctx, fmt.Sprintf("PortName[%s]", portName), func(ctx context.Context) error {
-				if portName == "" {
-					return fmt.Errorf("portName is required for vpcLatticeConfiguration")
-				}
-				var portMappings []types.PortMapping
-				for _, cd := range td.ContainerDefinitions {
-					portMappings = append(portMappings, cd.PortMappings...)
-				}
-				if _, found := lo.Find(portMappings, func(pm types.PortMapping) bool {
-					return portName == aws.ToString(pm.Name)
-				}); !found {
-					return fmt.Errorf("portName %s is not found in any containerDefinitions", portName)
-				}
-				return nil
-			}); err != nil {
-				return err
+	return nil
+}
+
+func (d *App) verifyLoadBalancer(ctx context.Context, lb types.LoadBalancer, td *TaskDefinitionInput) error {
+	vs := ctx.Value(verifyStateKey).(*verifyState)
+
+	tgArn := aws.ToString(lb.TargetGroupArn)
+	if tgArn == "" {
+		return fmt.Errorf("targetGroupArn is required for loadBalancer")
+	}
+	_, err := vs.VerifyResource(ctx, fmt.Sprintf("TargetGroup[%s]", tgArn), func(context.Context) error {
+		out, err := d.elbv2.DescribeTargetGroups(ctx, &elasticloadbalancingv2.DescribeTargetGroupsInput{
+			TargetGroupArns: []string{tgArn},
+		})
+		if err != nil {
+			return wrapPermissionError(err)
+		}
+		if len(out.TargetGroups) == 0 {
+			return ErrNotFound(fmt.Sprintf("target group %s is not found", tgArn))
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if ac := lb.AdvancedConfiguration; ac != nil {
+		roleArn := aws.ToString(ac.RoleArn)
+		if roleArn == "" {
+			return fmt.Errorf("roleArn is required for advancedConfiguration")
+		}
+		if _, err := vs.VerifyResource(ctx, fmt.Sprintf("RoleArn[%s]", roleArn), func(ctx context.Context) error {
+			return d.verifyRole(ctx, roleArn, "ecs.amazonaws.com")
+		}); err != nil {
+			return err
+		}
+		tgArn := aws.ToString(ac.AlternateTargetGroupArn)
+		if tgArn == "" {
+			return fmt.Errorf("alternateTargetGroupArn is required for advancedConfiguration")
+		}
+		_, err := vs.VerifyResource(ctx, fmt.Sprintf("TargetGroup[%s]", tgArn), func(context.Context) error {
+			out, err := d.elbv2.DescribeTargetGroups(ctx, &elasticloadbalancingv2.DescribeTargetGroupsInput{
+				TargetGroupArns: []string{tgArn},
+			})
+			if err != nil {
+				return wrapPermissionError(err)
+			}
+			if len(out.TargetGroups) == 0 {
+				return ErrNotFound(fmt.Sprintf("target group %s is not found", tgArn))
 			}
 			return nil
 		})
@@ -478,6 +564,24 @@ func (d *App) verifyServiceDefinition(ctx context.Context) error {
 		}
 	}
 
+	cname := aws.ToString(lb.ContainerName)
+	cport := aws.ToInt32(lb.ContainerPort)
+	var container *types.ContainerDefinition
+CONTAINER_DEF:
+	for _, c := range td.ContainerDefinitions {
+		if aws.ToString(c.Name) != cname {
+			continue
+		}
+		for _, pm := range c.PortMappings {
+			if aws.ToInt32(pm.ContainerPort) == cport {
+				container = &c
+				break CONTAINER_DEF
+			}
+		}
+	}
+	if container == nil {
+		return fmt.Errorf("container name %s and port %d is not defined in task definition", cname, cport)
+	}
 	return nil
 }
 
@@ -785,7 +889,7 @@ func (d *App) verifyRole(ctx context.Context, roleArn, principalService string) 
 		RoleName: aws.String(roleName),
 	})
 	if err != nil {
-		return err
+		return wrapPermissionError(err)
 	}
 	doc, err := parseIAMPolicyDocument(*out.Role.AssumeRolePolicyDocument)
 	if err != nil {
