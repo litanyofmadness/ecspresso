@@ -1022,10 +1022,33 @@ local tfstate = std.native('tfstate');
         tfstate(std.format('aws_subnet.private["%s"].id', 'az-b')),
       ],
       securityGroups: [
-        tfstate('data.aws_security_group.default.id'),
+        sg.id for sg in std.objectValues(tfstate('data.aws_security_group.default'))
+        // data.aws_security_group.default["first"].id
+        // data.aws_security_group.default["second"].id
       ]
     }
   }
+}
+```
+
+When the tfstate includes count/for_each resources, so the resource address can be specified with an index.
+
+```jsonnet
+local tfstate = std.native('tfstate');
+tfstate('aws_subnet.private["%s"].id' % 'az-a') // aws_subnet.private["az-a"].id
+```
+
+To fetch all resources of count/for_each resources, use `std.objectValues()`.
+
+```jsonnet
+local tfstate = std.native('tfstate');
+{
+  subnets: [
+    subnet.id for subnet in std.objectValues(tfstate('aws_subnet.private'))
+    // aws_subnet.private["az-a"].id
+    // aws_subnet.private["az-b"].id
+    // aws_subnet.private["az-c"].id
+  ],
 }
 ```
 
