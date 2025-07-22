@@ -1,3 +1,4 @@
+local tfstate = std.native('tfstate');
 {
   deploymentConfiguration: {
     maximumPercent: 200,
@@ -18,10 +19,10 @@
   networkConfiguration: {
     awsvpcConfiguration: {
       subnets: [
-        '{{ tfstate `aws_subnet.private-a.id` }}',
+        tfstate('aws_subnet.private-a.id'),
       ],
       securityGroups: [
-        "{{ tfstatef `data.aws_security_group.default['%s'].id` `first` }}",
+        subnet.id for subnet in std.objectValues(tfstate('data.aws_security_group.default'))
       ],
       assignPublicIp: 'ENABLED',
     },

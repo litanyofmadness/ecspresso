@@ -1,15 +1,18 @@
+local env = std.native('env');
+local must_env = std.native('must_env');
+local tfstate = std.native('tfstate');
 {
   containerDefinitions: [
     {
       cpu: 1024,
       essential: true,
-      image: "{{ tfstate `aws_ecr_repository.all['app'].repository_url` }}:{{ must_env `TAG` }}",
+      image: tfstate('aws_ecr_repository.all["app"].repository_url') + ':' + must_env('TAG'),
       memory: 1024,
       name: 'app',
       environment: [
         {
           name: 'JSON',
-          value: '{{ env `JSON` | json_escape }}',
+          value: env('JSON', ''),
         },
       ],
       portMappings: [
