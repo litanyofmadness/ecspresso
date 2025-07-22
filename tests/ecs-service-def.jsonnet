@@ -22,7 +22,7 @@ local tfstate = std.native('tfstate');
         tfstate('aws_subnet.private-a.id'),
       ],
       securityGroups: [
-        subnet.id for subnet in std.objectValues(tfstate('data.aws_security_group.default'))
+        sg.id for sg in std.objectValues(tfstate('data.aws_security_group.default'))
       ],
       assignPublicIp: 'ENABLED',
     },
