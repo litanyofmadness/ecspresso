@@ -219,6 +219,10 @@ func svToUpdateServiceInput(sv *Service) *ecs.UpdateServiceInput {
 		in.PlacementStrategy = nil
 	}
 
+	// explicitly set empty slice (to remove the load balancers)
+	if len(sv.LoadBalancers) == 0 {
+		in.LoadBalancers = []types.LoadBalancer{}
+	}
 	// explicitly set empty slice (to remove the attribute)
 	if len(sv.VolumeConfigurations) == 0 {
 		in.VolumeConfigurations = []types.ServiceVolumeConfiguration{}
