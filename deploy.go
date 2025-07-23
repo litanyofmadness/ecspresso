@@ -248,7 +248,11 @@ func (d *App) UpdateServiceAttributes(ctx context.Context, sv *Service, taskDefi
 		in.TaskDefinition = nil
 		in.CapacityProviderStrategy = nil
 	} else {
-		d.LogInfo("deployment by ECS rolling update")
+		if sv.DeploymentConfiguration != nil && sv.DeploymentConfiguration.Strategy == types.DeploymentStrategyBlueGreen {
+			d.LogInfo("deployment by ECS blue/green")
+		} else {
+			d.LogInfo("deployment by ECS rolling update")
+		}
 		in.ForceNewDeployment = opt.ForceNewDeployment
 		in.TaskDefinition = aws.String(taskDefinitionArn)
 	}
