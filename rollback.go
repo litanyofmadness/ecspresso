@@ -349,11 +349,15 @@ func (d *App) findActiveECSDeployment(ctx context.Context, timeout time.Duration
 	return &deployment, nil
 }
 
-func (d *App) rollbackActiveECSDeployment(ctx context.Context, sv *Service, deployment *types.ServiceDeploymentBrief, _ RollbackOption) (string, error) {
+func (d *App) rollbackActiveECSDeployment(ctx context.Context, sv *Service, deployment *types.ServiceDeploymentBrief, opt RollbackOption) (string, error) {
 	currentTaskDefinition := *sv.TaskDefinition
 
 	// Stop the deployment with rollback
-	d.LogInfo("Stopping deployment %s with rollback", arnToName(*deployment.ServiceDeploymentArn))
+	d.LogInfo("Stopping deployment %s with rollback %s", arnToName(*deployment.ServiceDeploymentArn), opt.DryRunString())
+	if opt.DryRun {
+		d.LogInfo("Rollback would be triggered for deployment %s", arnToName(*deployment.ServiceDeploymentArn))
+		return currentTaskDefinition, nil
+	}
 
 	if _, err := d.ecs.StopServiceDeployment(ctx, &ecs.StopServiceDeploymentInput{
 		ServiceDeploymentArn: deployment.ServiceDeploymentArn,
