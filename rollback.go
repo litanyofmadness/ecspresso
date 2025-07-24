@@ -326,9 +326,14 @@ func (d *App) findActiveECSDeployment(ctx context.Context, timeout time.Duration
 		if err != nil {
 			return nil, fmt.Errorf("failed to list service deployments: %w", err)
 		}
-		if len(resp.ServiceDeployments) > 0 {
-			// found active deployments
-			activeDeployments = append(activeDeployments, resp.ServiceDeployments...)
+		// found active deployments started after the application started
+		activeDeployments = append(activeDeployments,
+			lo.Filter(resp.ServiceDeployments, func(item types.ServiceDeploymentBrief, _ int) bool {
+				return item.CreatedAt.After(d.startedAt)
+			})...,
+		)
+		if len(activeDeployments) > 0 {
+			d.LogDebug("found %d active service deployments", len(activeDeployments))
 			break
 		}
 		select {
