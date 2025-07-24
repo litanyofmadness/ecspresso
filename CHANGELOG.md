@@ -1,5 +1,21 @@
 # Changelog
 
+## [v2.6.0](https://github.com/kayac/ecspresso/compare/v2.5.0...v2.6.0) - 2025-07-24
+- add retry option for better reliability by @bary822 in https://github.com/kayac/ecspresso/pull/847
+- Fix service connect configuration removal on deployment by @itkq in https://github.com/kayac/ecspresso/pull/856
+- Supports ECS Blue Green deployment strategy. by @fujiwara in https://github.com/kayac/ecspresso/pull/861
+- Bump golang.org/x/oauth2 from 0.16.0 to 0.27.0 by @dependabot[bot] in https://github.com/kayac/ecspresso/pull/862
+- docs: Add rollback command documentation to README by @fujiwara in https://github.com/kayac/ecspresso/pull/863
+- Refactor verify command by @fujiwara in https://github.com/kayac/ecspresso/pull/864
+- Bump the aws-sdk-go-v2 group across 1 directory with 15 updates by @dependabot[bot] in https://github.com/kayac/ecspresso/pull/865
+- Update to tfstate lookup v1.7.0 by @fujiwara in https://github.com/kayac/ecspresso/pull/866
+- Fix deployment log message for ECS B/G Deploy by @csenet in https://github.com/kayac/ecspresso/pull/867
+- enables to remove load balancers from ECS service. by @fujiwara in https://github.com/kayac/ecspresso/pull/868
+- Change the default of deploy --wait-until from "stable" to "deployed" by @fujiwara in https://github.com/kayac/ecspresso/pull/869
+- show any deployment statuses when the status changed. by @fujiwara in https://github.com/kayac/ecspresso/pull/872
+- fix: findActiveECSDeployment by @fujiwara in https://github.com/kayac/ecspresso/pull/873
+- refresh waits until deployed internally by @fujiwara in https://github.com/kayac/ecspresso/pull/874
+
 ## [v2.5.0](https://github.com/kayac/ecspresso/compare/v2.4.6...v2.5.0) - 2025-05-10
 - Pin external actions to mitigate supply chain attacks by @mashiike in https://github.com/kayac/ecspresso/pull/816
 - Bump github.com/golang-jwt/jwt/v4 from 4.5.1 to 4.5.2 by @dependabot in https://github.com/kayac/ecspresso/pull/819
