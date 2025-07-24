@@ -172,6 +172,7 @@ func (d *App) WaitServiceDeployCompleted(ctx context.Context, sv *Service) error
 	tick := time.NewTicker(refreshInterval)
 	defer tick.Stop()
 	st := &showState{lastEventAt: time.Now()}
+	var prevStatus types.ServiceDeploymentStatus
 	for {
 		select {
 		case <-ctx.Done():
@@ -191,6 +192,10 @@ func (d *App) WaitServiceDeployCompleted(ctx context.Context, sv *Service) error
 		}
 		if len(resp.ServiceDeployments) == 1 {
 			status := resp.ServiceDeployments[0].Status
+			if status != prevStatus {
+				d.LogInfo("Service deployment status: %s", status)
+				prevStatus = status
+			}
 			switch status {
 			case types.ServiceDeploymentStatusSuccessful, types.ServiceDeploymentStatusRollbackSuccessful:
 				d.LogInfo("Service deployment completed %s", status)
@@ -202,7 +207,6 @@ func (d *App) WaitServiceDeployCompleted(ctx context.Context, sv *Service) error
 			}
 		}
 	}
-	return nil
 }
 
 func (d *App) WaitForCodeDeploy(ctx context.Context, sv *Service) error {
