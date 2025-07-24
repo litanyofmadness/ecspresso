@@ -140,6 +140,8 @@ type App struct {
 	config *Config
 	loader *configLoader
 	logger *slog.Logger
+
+	startedAt time.Time
 }
 
 type appOptions struct {
@@ -209,6 +211,7 @@ func New(ctx context.Context, opt *CLIOptions, newAppOptions ...AppOption) (*App
 		lambda:      lambda.NewFromConfig(conf.awsv2Config),
 		loader:      appOpts.loader,
 		config:      appOpts.config,
+		startedAt:   time.Now(),
 	}
 	if logFormat == logFormatJSON {
 		d.logger = appOpts.logger.With("cluster", d.Cluster, "service", d.Service)
@@ -230,6 +233,7 @@ func (d *App) Timeout() time.Duration {
 }
 
 func (d *App) Start(ctx context.Context) (context.Context, context.CancelFunc) {
+	d.startedAt = time.Now()
 	if d.config.Timeout.Duration > 0 {
 		return context.WithTimeout(ctx, d.config.Timeout.Duration)
 	} else {
